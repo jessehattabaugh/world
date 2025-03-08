@@ -6,7 +6,7 @@ let audioInitialized = false;
 
 // Audio initialization - on user interaction to comply with browser policies
 function initAudio() {
-  if (audioInitialized) return;
+  if (audioInitialized) {return;}
 
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
   audioInitialized = true;
@@ -14,7 +14,7 @@ function initAudio() {
 
 // Play a sound with specific parameters
 function playSound(frequency, type = 'sine', duration = 0.15, volume = 0.2) {
-  if (!audioInitialized) return;
+  if (!audioInitialized) {return;}
 
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
@@ -43,9 +43,9 @@ function playHoverSound() {
 
 function playSuccessSound() {
   // Play a little melody
-  setTimeout(() => playSound(600, 'sine', 0.1), 0);
-  setTimeout(() => playSound(800, 'sine', 0.1), 100);
-  setTimeout(() => playSound(1000, 'sine', 0.2), 200);
+  setTimeout(() => {return playSound(600, 'sine', 0.1)}, 0);
+  setTimeout(() => {return playSound(800, 'sine', 0.1)}, 100);
+  setTimeout(() => {return playSound(1000, 'sine', 0.2)}, 200);
 }
 
 // Animation on scroll
@@ -74,14 +74,14 @@ function createMouseTrail() {
   document.addEventListener('mousemove', (e) => {
     const trail = document.createElement('div');
     trail.className = 'mouse-trail-particle';
-    trail.style.left = e.clientX + 'px';
-    trail.style.top = e.clientY + 'px';
+    trail.style.left = `${e.clientX  }px`;
+    trail.style.top = `${e.clientY  }px`;
 
     const size = Math.random() * 15 + 5;
     const hue = Math.random() * 60 + 290; // Purple to pink range
 
-    trail.style.width = size + 'px';
-    trail.style.height = size + 'px';
+    trail.style.width = `${size  }px`;
+    trail.style.height = `${size  }px`;
     trail.style.backgroundColor = `hsla(${hue}, 100%, 70%, 0.7)`;
 
     trailContainer.appendChild(trail);
