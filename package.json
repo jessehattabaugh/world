@@ -1,0 +1,36 @@
+{
+	"devDependencies": {
+		"@eslint/compat": "latest",
+		"@eslint/eslintrc": "latest",
+		"@eslint/js": "latest",
+		"@playwright/test": "latest",
+		"cross-env": "latest",
+		"eslint": "latest",
+		"globals": "latest",
+		"lighthouse": "latest",
+		"node-fetch": "latest",
+		"npm-run-all": "latest",
+		"rimraf": "latest",
+		"serve": "latest"
+	},
+	"scripts": {
+		"analyze": "lighthouse http://localhost:3000 --output json --output html --output-path ./lighthouse-report.html",
+		"kill": "npx kill-port 3000",
+		"lint": "eslint .",
+		"screenshots": "node bin/screenshots-generate.js",
+		"screenshots:prod": "node -e \"process.env.BASE_URL='https://your-production-url.com'\" && node bin/screenshots-generate.js",
+		"start": "npx serve ./www",
+		"test": "playwright test",
+		"test:clean-snapshots": "node bin/snapshots-clean.js",
+		"test:debug": "playwright test --debug",
+		"test:generate": "playwright codegen http://localhost:3000",
+		"test:perf": "node bin/perf-update.js",
+		"test:prod": "node -e \"process.env.TEST_ENV='production'\" && playwright test --project=chromium",
+		"test:regenerate-baselines": "node bin/snapshots-update.js",
+		"test:report": "playwright show-report",
+		"test:staging": "node -e \"process.env.TEST_ENV='staging'\" && playwright test",
+		"test:ui": "playwright test --ui",
+		"test:update-snapshots": "playwright test --update-snapshots"
+	},
+	"type": "module"
+}
