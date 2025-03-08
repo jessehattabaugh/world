@@ -22,20 +22,31 @@ async function cleanSnapshots() {
 			return;
 		}
 
-		// Get all files in the snapshots directory
-		const files = await fs.readdir(SNAPSHOTS_DIR);
+		// Get all files and directories in the snapshots directory
+		const items = await fs.readdir(SNAPSHOTS_DIR);
 
-		// Filter out baseline files
-		const filesToRemove = files.filter((file) => {
-			return !file.includes('baseline') && !file.endsWith('.md');
+		// Filter out baseline files and markdown files
+		const itemsToRemove = items.filter((item) => {
+			return !item.includes('baseline') && !item.endsWith('.md');
 		});
 
-		// Delete each file that's not a baseline
-		await Promise.all(filesToRemove.map(async (file) => {
-			const filePath = path.join(SNAPSHOTS_DIR, file);
-			await fs.unlink(filePath);
-			console.log(`Deleted: ${file}`);
-		}));
+		// Delete each item that's not a baseline or .md file
+		for (const item of itemsToRemove) {
+			const itemPath = path.join(SNAPSHOTS_DIR, item);
+
+			// Check if it's a file or directory
+			const stats = await fs.stat(itemPath);
+
+			if (stats.isDirectory()) {
+				// For directories, use recursive removal
+				await fs.rm(itemPath, { recursive: true, force: true });
+				console.log(`Deleted directory: ${item}`);
+			} else {
+				// For files, use unlink
+				await fs.unlink(itemPath);
+				console.log(`Deleted file: ${item}`);
+			}
+		}
 
 		console.log('Snapshot cleanup complete!');
 

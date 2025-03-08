@@ -4,12 +4,19 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<meta name="description" content="A modern web boilerplate with cutting-edge features" data-site-description>
+	<meta name="description" content="Jesse's World - Personal website and portfolio" data-site-description>
 	<meta name="theme-color" content="#000000">
 	<meta name="color-scheme" content="dark light">
 	<meta name="view-transition" content="same-origin">
 
-	<title>Modern Web Boilerplate</title>
+	<!-- SEO meta tags -->
+	<meta property="og:title" content="Jesse's World">
+	<meta property="og:description" content="Welcome to Jesse's World - Personal website and portfolio">
+	<meta property="og:image" content="/images/og-image.jpg">
+	<meta name="twitter:card" content="summary_large_image">
+
+	<title>Jesse's World</title>
+	<link rel="canonical" href="https://jessesworld.example.com" />
 	<link rel="manifest" href="/manifest.json">
 	<link rel="icon" href="/favicon.ico">
 
@@ -27,9 +34,88 @@
 </head>
 
 <body>
-	<h1>Jesse's World</h1>
-	<p>your site here</p>
-	<theme-toggle></theme-toggle>
+	<!-- Skip to content link for accessibility -->
+	<a href="#main-content" class="skip-link">Skip to content</a>
+
+	<header role="banner">
+		<div class="container">
+			<h1>Jesse's World</h1>
+
+			<nav role="navigation" aria-label="Main navigation">
+				<ul>
+					<li><a href="/" aria-current="page">Home</a></li>
+					<li><a href="/about">About</a></li>
+					<li><a href="/projects">Projects</a></li>
+					<li><a href="/contact">Contact</a></li>
+				</ul>
+			</nav>
+
+			<theme-toggle role="switch" aria-label="Toggle theme"></theme-toggle>
+		</div>
+	</header>
+
+	<main id="main-content" role="main">
+		<section class="hero">
+			<div class="container">
+				<h2>Welcome to my personal website</h2>
+				<p>This site showcases my projects and thoughts on web development, technology, and more.</p>
+				<a href="/about" class="cta-button" role="button">Learn more</a>
+			</div>
+		</section>
+
+		<section class="featured-content">
+			<div class="container">
+				<h2>Featured Projects</h2>
+				<div class="card-grid">
+					<article class="card">
+						<h3>Project One</h3>
+						<p>A brief description of this amazing project with modern web technologies.</p>
+						<a href="/projects/project-one">View Project</a>
+					</article>
+					<article class="card">
+						<h3>Project Two</h3>
+						<p>Another fascinating project showcasing different skills and approaches.</p>
+						<a href="/projects/project-two">View Project</a>
+					</article>
+					<article class="card">
+						<h3>Project Three</h3>
+						<p>A third project example with focus on accessibility and performance.</p>
+						<a href="/projects/project-three">View Project</a>
+					</article>
+				</div>
+			</div>
+		</section>
+
+		<section class="about-preview">
+			<div class="container">
+				<h2>About Me</h2>
+				<p>I'm a developer passionate about creating accessible, fast, and user-friendly web experiences. I focus on modern web standards and progressive enhancement.</p>
+				<a href="/about">Read more about me</a>
+			</div>
+		</section>
+	</main>
+
+	<footer role="contentinfo">
+		<div class="container">
+			<div class="footer-content">
+				<div class="footer-section">
+					<h2>Contact</h2>
+					<address>
+						<a href="mailto:hello@jessesworld.example.com">hello@jessesworld.example.com</a>
+					</address>
+				</div>
+				<div class="footer-section">
+					<h2>Links</h2>
+					<ul>
+						<li><a href="/privacy">Privacy Policy</a></li>
+						<li><a href="/terms">Terms of Service</a></li>
+						<li><a href="/sitemap">Sitemap</a></li>
+					</ul>
+				</div>
+			</div>
+			<p class="copyright">&copy; <time datetime="2023">2023</time> Jesse's World. All rights reserved.</p>
+		</div>
+	</footer>
 </body>
 
 </html>
