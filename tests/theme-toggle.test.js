@@ -223,7 +223,7 @@ test.describe('Theme Toggle', () => {
 		// 1. Proper accessible switch role
 		try {
 			const toggle = page.getByRole('switch', { name: /toggle theme/i });
-			if (await toggle.isVisible({ timeout: 2000 }).catch(() => false)) {
+			if (await toggle.isVisible({ timeout: 2000 }).catch(() => {return false})) {
 				return toggle;
 			}
 		} catch (e) {
@@ -233,7 +233,7 @@ test.describe('Theme Toggle', () => {
 		// 2. Try button role with theme-related text
 		try {
 			const toggleButton = page.getByRole('button', { name: /(theme|dark|light|mode)/i });
-			if (await toggleButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+			if (await toggleButton.isVisible({ timeout: 2000 }).catch(() => {return false})) {
 				return toggleButton;
 			}
 		} catch (e) {
@@ -253,7 +253,7 @@ test.describe('Theme Toggle', () => {
 		for (const selector of possibleSelectors) {
 			try {
 				const element = page.locator(selector);
-				if (await element.isVisible({ timeout: 1000 }).catch(() => false)) {
+				if (await element.isVisible({ timeout: 1000 }).catch(() => {return false})) {
 					console.log('Found toggle with selector:', selector);
 					return element;
 				}

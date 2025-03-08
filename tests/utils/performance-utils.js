@@ -1,6 +1,6 @@
 /**
  * Performance testing utilities
- * 
+ *
  * Provides functions for measuring and comparing performance metrics
  */
 
@@ -21,28 +21,28 @@ export async function getBrowserPerformanceMetrics(page) {
   return page.evaluate(() => {
     const perfEntries = performance.getEntriesByType('navigation')[0];
     const paintEntries = performance.getEntriesByType('paint');
-    
+
     const getFCP = () => {
-      const fcpEntry = paintEntries.find(entry => entry.name === 'first-contentful-paint');
+      const fcpEntry = paintEntries.find(entry => {return entry.name === 'first-contentful-paint'});
       return fcpEntry ? fcpEntry.startTime : null;
     };
-    
+
     return {
       // Navigation Timing API metrics
       TTFB: perfEntries.responseStart - perfEntries.requestStart,
       DOMContentLoaded: perfEntries.domContentLoadedEventEnd - perfEntries.fetchStart,
       Load: perfEntries.loadEventEnd - perfEntries.fetchStart,
-      
+
       // Paint Timing API metrics
       FCP: getFCP(),
-      
+
       // Additional metrics if available
       memory: performance.memory ? {
         jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
         totalJSHeapSize: performance.memory.totalJSHeapSize,
         usedJSHeapSize: performance.memory.usedJSHeapSize
       } : null,
-      
+
       // Custom metrics
       resourceCount: performance.getEntriesByType('resource').length,
       scriptDuration: perfEntries.domComplete - perfEntries.domContentLoadedEventEnd
@@ -57,7 +57,7 @@ export async function getBrowserPerformanceMetrics(page) {
  */
 export async function getAllPerformanceMetrics(page) {
   const browserMetrics = await getBrowserPerformanceMetrics(page);
-  
+
   // Use the Core Web Vitals API if available
   let webVitals = {};
   try {
@@ -67,7 +67,7 @@ export async function getAllPerformanceMetrics(page) {
         if (typeof window.webVitals === 'undefined') {
           return resolve({});
         }
-        
+
         const vitals = {};
         const reportWebVital = ({ name, value }) => {
           vitals[name] = value;
@@ -75,7 +75,7 @@ export async function getAllPerformanceMetrics(page) {
             resolve(vitals);
           }
         };
-        
+
         window.webVitals.getCLS(reportWebVital);
         window.webVitals.getLCP(reportWebVital);
         window.webVitals.getFID(reportWebVital);
@@ -84,7 +84,7 @@ export async function getAllPerformanceMetrics(page) {
   } catch (e) {
     // Web vitals may not be available in all environments
   }
-  
+
   return {
     ...browserMetrics,
     ...webVitals
@@ -99,7 +99,7 @@ export async function getAllPerformanceMetrics(page) {
  */
 export async function assertPerformanceBaseline(baselineId, currentMetrics, options = {}) {
   const baselinePath = path.join(performanceDir, `${baselineId}-performance.json`);
-  
+
   // If baseline doesn't exist, create it
   if (!fs.existsSync(baselinePath)) {
     console.log(`⚠️ No baseline found for ${baselineId}, creating new baseline`);
@@ -110,10 +110,10 @@ export async function assertPerformanceBaseline(baselineId, currentMetrics, opti
     fs.writeFileSync(baselinePath, JSON.stringify(newBaseline, null, 2));
     return true;
   }
-  
+
   // Load existing baseline
   const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
-  
+
   // Default thresholds (percentage increase allowed)
   const thresholds = {
     TTFB: 20,
@@ -126,53 +126,53 @@ export async function assertPerformanceBaseline(baselineId, currentMetrics, opti
     scriptDuration: 25,
     ...options.thresholds
   };
-  
+
   // Compare current metrics to baseline
   const results = {};
   let passed = true;
-  
+
   // Skip comparisons if baseline metrics is null
   if (!baseline.metrics) {
     console.warn(`⚠️ No metrics in baseline for ${baselineId}`);
     return true;
   }
-  
+
   // For each metric in the baseline, check if current is within threshold
   Object.keys(baseline.metrics).forEach(metricName => {
     // Skip if current metric is missing
     if (currentMetrics[metricName] === undefined) {
       return;
     }
-    
+
     const baselineValue = baseline.metrics[metricName];
     const currentValue = currentMetrics[metricName];
-    
+
     // Skip null values
     if (baselineValue === null || currentValue === null) {
       return;
     }
-    
+
     // For object values (e.g., memory), skip comparison
     if (typeof baselineValue === 'object') {
       return;
     }
-    
+
     // Calculate percentage increase
     const percentageIncrease = ((currentValue - baselineValue) / baselineValue) * 100;
     const threshold = thresholds[metricName] || 20; // Default 20% threshold
-    
+
     results[metricName] = {
       baseline: baselineValue,
       current: currentValue,
       percentageIncrease,
       passed: percentageIncrease <= threshold
     };
-    
+
     if (!results[metricName].passed) {
       passed = false;
     }
   });
-  
+
   // Log comparison results
   console.log(`\n📊 Performance comparison for ${baselineId}:`);
   Object.keys(results).forEach(metric => {
@@ -180,6 +180,6 @@ export async function assertPerformanceBaseline(baselineId, currentMetrics, opti
     const status = passed ? '✅' : '❌';
     console.log(`${status} ${metric}: ${baseline.toFixed(2)} → ${current.toFixed(2)} (${percentageIncrease.toFixed(2)}%)`);
   });
-  
+
   return passed;
 }

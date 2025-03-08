@@ -5,28 +5,38 @@
  * 2. Renames all snapshots to include "baseline" in the filename
  */
 
-import { exec } from 'child_process';
+import { execSync } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 
 const SNAPSHOTS_DIR = path.join(process.cwd(), 'snapshots');
 
-async function runTests() {
-	console.log('Running tests with --update-snapshots flag...');
+console.log('Starting baseline snapshots regeneration...');
 
-	return new Promise((resolve, reject) => {
-		exec('npx playwright test --update-snapshots', (error, stdout, stderr) => {
-			if (error) {
-				console.error('Error running tests:', error);
-				console.error(stderr);
-				reject(error);
-				return;
-			}
-
-			console.log(stdout);
-			resolve();
-		});
-	});
+try {
+  // Print a more informative message
+  console.log('Running tests with --update-snapshots flag...');
+  
+  // Run playwright test with update-snapshots flag
+  // Use execSync with stdio: 'inherit' to show real-time output
+  execSync('npx playwright test --update-snapshots', {
+    stdio: 'inherit',
+    cwd: process.cwd(),
+    encoding: 'utf8'
+  });
+  
+  console.log('\nSuccessfully regenerated baseline snapshots!');
+} catch (error) {
+  console.error('\nFailed to regenerate baseline snapshots.');
+  
+  if (error.stdout) console.error(`Output: ${error.stdout}`);
+  if (error.stderr) console.error(`Error: ${error.stderr}`);
+  
+  console.error('\nTry running tests first to ensure they pass before updating snapshots.');
+  console.error('You can also try running the update command manually:');
+  console.error('npx playwright test --update-snapshots');
+  
+  process.exit(1);
 }
 
 async function renameSnapshotsToBaselines() {
@@ -35,63 +45,4 @@ async function renameSnapshotsToBaselines() {
 	try {
 		// Ensure directory exists
 		try {
-			await fs.access(SNAPSHOTS_DIR);
-		} catch {
-			console.log(`Creating snapshots directory at ${SNAPSHOTS_DIR}`);
-			await fs.mkdir(SNAPSHOTS_DIR, { recursive: true });
-		}
-
-		const files = await fs.readdir(SNAPSHOTS_DIR);
-
-		const renamePromises = files.map(async (file) => {
-			// Skip files that already have "baseline" in the name or non-image files
-			if (file.includes('baseline') || !file.endsWith('.png')) {
-				return;
-			}
-
-			// Get file extension
-			const ext = path.extname(file);
-			const baseName = path.basename(file, ext);
-
-			// Create new filename with "baseline" suffix
-			const newFileName = `${baseName}-baseline${ext}`;
-
-			// Rename the file
-			await fs.rename(path.join(SNAPSHOTS_DIR, file), path.join(SNAPSHOTS_DIR, newFileName));
-
-			console.log(`Renamed: ${file} -> ${newFileName}`);
-		});
-
-		await Promise.all(renamePromises);
-
-		console.log('All snapshots renamed successfully!');
-	} catch (error) {
-		console.error('Error renaming snapshots:', error);
-		throw error;
-	}
-}
-
-async function main() {
-	try {
-		// Ensure snapshots directory exists
-		try {
-			await fs.access(SNAPSHOTS_DIR);
-		} catch {
-			console.log(`Creating snapshots directory at ${SNAPSHOTS_DIR}`);
-			await fs.mkdir(SNAPSHOTS_DIR, { recursive: true });
-		}
-
-		// Step 1: Run tests to generate new snapshots
-		await runTests();
-
-		// Step 2: Rename snapshots to include "baseline"
-		await renameSnapshotsToBaselines();
-
-		console.log('Baseline snapshots regenerated successfully!');
-	} catch (error) {
-		console.error('Failed to regenerate baseline snapshots:', error);
-		process.exit(1);
-	}
-}
-
-main();
+			await
