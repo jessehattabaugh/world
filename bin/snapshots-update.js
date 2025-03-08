@@ -3,10 +3,10 @@
  * This script:
  * 1. Runs the tests with --update-snapshots flag
  * 2. Renames all snapshots to include "baseline" in the filename
- * 
+ *
  * Usage:
  *   node bin/snapshots-update.js [options]
- * 
+ *
  * Options:
  *   --skip-tests         Skip running tests and only rename existing snapshots
  *   --test-file <path>   Run tests only for the specified file
@@ -34,7 +34,7 @@ if (!skipTests) {
   try {
     // Print a more informative message
     console.log('Running tests with --update-snapshots flag...');
-    
+
     // Construct command based on whether a specific test file was provided
     let command = 'npx playwright test --update-snapshots';
     if (testFile) {
@@ -57,7 +57,7 @@ if (!skipTests) {
 
     if (error.stdout) {console.error(`Output: ${error.stdout}`);}
     if (error.stderr) {console.error(`Error: ${error.stderr}`);}
-    
+
     // Provide more specific guidance for common errors
     if (error.message && error.message.includes('does not provide an export named')) {
       console.error('\nThis appears to be a module import error. Check your import statements in test files.');

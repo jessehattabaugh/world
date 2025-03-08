@@ -62,3 +62,36 @@ To build a web site that is tested end-to-end in real browsers, authored in web 
 - `npm run test` - Run Playwright end-to-end tests
 - `npm run test:ui` - Run Playwright tests with UI for debugging
 - `npm run analyze` - Analyze the site with Lighthouse
+
+## Snapshot Management
+
+### Regenerating Baseline Snapshots
+
+The project includes a utility script to regenerate snapshot baselines:
+
+```bash
+npm run test:regenerate-baselines
+```
+
+This script runs the tests with `--update-snapshots` flag and renames all snapshots to include "baseline" in the filename.
+
+#### New Command Line Options
+
+The snapshot update script now supports several command-line options for more flexibility:
+
+- `--skip-tests`: Only rename existing snapshots without running tests
+  ```bash
+  node bin/snapshots-update.js --skip-tests
+  ```
+
+- `--test-file <path>`: Run tests and update snapshots for only the specified file
+  ```bash
+  node bin/snapshots-update.js --test-file tests/specific-test.js
+  ```
+
+- `--dry-run`: Preview what files would be renamed without making any changes
+  ```bash
+  node bin/snapshots-update.js --dry-run
+  ```
+
+These options are helpful when dealing with test failures or when you only want to update specific test snapshots.
