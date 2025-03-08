@@ -18,6 +18,7 @@ npm-debug.log*
 # Test snapshots - only keep baseline snapshots
 /snapshots/*
 !/snapshots/*baseline*
+!/snapshots/README.md
 
 # Temporary files
 .DS_Store
