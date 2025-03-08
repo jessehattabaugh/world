@@ -20,17 +20,21 @@
 		"screenshots": "node bin/screenshots-generate.js",
 		"screenshots:prod": "node -e \"process.env.BASE_URL='https://your-production-url.com'\" && node bin/screenshots-generate.js",
 		"start": "npx serve ./www",
-		"test": "playwright test",
+		"test": "cross-env TEST_ENV=staging playwright test",
+		"test:local": "playwright test",
+		"test:url": "cross-env BASE_URL=${TEST_URL} playwright test",
 		"test:clean-snapshots": "node bin/snapshots-clean.js",
 		"test:debug": "playwright test --debug",
 		"test:generate": "playwright codegen http://localhost:3000",
 		"test:perf": "node bin/perf-update.js",
-		"test:prod": "node -e \"process.env.TEST_ENV='production'\" && playwright test --project=chromium",
+		"test:prod": "cross-env TEST_ENV=production playwright test --project=chromium",
 		"test:regenerate-baselines": "node bin/snapshots-update.js",
 		"test:report": "playwright show-report",
-		"test:staging": "node -e \"process.env.TEST_ENV='staging'\" && playwright test",
+		"test:staging": "cross-env TEST_ENV=staging playwright test",
 		"test:ui": "playwright test --ui",
-		"test:update-snapshots": "playwright test --update-snapshots"
+		"test:update-snapshots": "playwright test --update-snapshots",
+		"test:update-performance": "cross-env UPDATE_PERFORMANCE_BASELINE=true playwright test",
+		"pretest": "node -e \"require('fs').mkdirSync('./snapshots', { recursive: true }); require('fs').mkdirSync('./performance', { recursive: true });\""
 	},
 	"type": "module"
 }

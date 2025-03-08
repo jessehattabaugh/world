@@ -14,27 +14,46 @@ if (!fs.existsSync(snapshotDir)) {
 
 // Get base URL from environment variable or use default
 export const getBaseUrl = () => {
+  // If BASE_URL is explicitly provided, it takes precedence
+  if (process.env.BASE_URL) {
+    return process.env.BASE_URL;
+  }
+
+  // Otherwise use environment-specific defaults
   if (process.env.TEST_ENV === 'staging') {
     return process.env.STAGING_URL || 'https://staging.example.com';
   }
-  return process.env.BASE_URL || 'http://localhost:3000';
+  if (process.env.TEST_ENV === 'production') {
+    return process.env.PROD_URL || 'https://production.example.com';
+  }
+
+  // Default to localhost for local development
+  return 'http://localhost:3000';
 };
 
 // Browser setup and teardown
 export async function setupBrowser(options = {}) {
-  const browser = await chromium.launch();
-  const context = await browser.newContext({
-    viewport: options.viewport || { width: 1280, height: 720 },
-    ...options
-  });
-  const page = await context.newPage();
-
-  return { browser, context, page };
+  try {
+    const browser = await chromium.launch();
+    const context = await browser.newContext({
+      viewport: options.viewport || { width: 1280, height: 720 },
+      ...options
+    });
+    const page = await context.newPage();
+    return { browser, context, page };
+  } catch (error) {
+    console.error('Error setting up browser:', error);
+    throw error;
+  }
 }
 
 export async function teardownBrowser(browser) {
   if (browser) {
-    await browser.close();
+    try {
+      await browser.close();
+    } catch (error) {
+      console.error('Error closing browser:', error);
+    }
   }
 }
 
@@ -44,13 +63,22 @@ export function createPageFixture() {
   let page;
 
   beforeEach(async () => {
-    const setup = await setupBrowser();
-    browser = setup.browser;
-    page = setup.page;
+    try {
+      const setup = await setupBrowser();
+      browser = setup.browser;
+      page = setup.page;
+    } catch (error) {
+      console.error('Error in beforeEach hook:', error);
+      throw error;
+    }
   });
 
   afterEach(async () => {
-    await teardownBrowser(browser);
+    try {
+      await teardownBrowser(browser);
+    } catch (error) {
+      console.error('Error in afterEach hook:', error);
+    }
   });
 
   return () => {return page};
@@ -58,17 +86,21 @@ export function createPageFixture() {
 
 // Helper to take and compare screenshots
 export async function expectScreenshot(page, screenshotName) {
-  const filePath = path.join(snapshotDir, `${screenshotName}-baseline.png`);
-  const screenshot = await page.screenshot();
+  try {
+    const filePath = path.join(snapshotDir, `${screenshotName}-baseline.png`);
+    const screenshot = await page.screenshot();
 
-  // If the baseline doesn't exist, create it
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, screenshot);
-    console.log(`Created new baseline screenshot: ${screenshotName}`);
-    return true;
+    // If the baseline doesn't exist, create it
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, screenshot);
+      console.log(`Created new baseline screenshot: ${screenshotName}`);
+      return true;
+    }
+
+    // Simple file existence check
+    return fs.existsSync(filePath);
+  } catch (error) {
+    console.error(`Error taking screenshot for ${screenshotName}:`, error);
+    return false;
   }
-
-  // TODO: Implement screenshot comparison logic
-  // For now, just comparing existence is sufficient
-  return fs.existsSync(filePath);
 }
