@@ -75,13 +75,25 @@ test.describe('Performance metrics', () => {
 		console.log('Performance metrics:', allMetrics);
 
 		// Assert against thresholds from the config
-		expect(allMetrics.FCP).toBeLessThan(2000); // 2 seconds
-		expect(allMetrics.LCP).toBeLessThan(2500); // 2.5 seconds
-		expect(allMetrics.TTI).toBeLessThan(3500); // 3.5 seconds
-		expect(allMetrics.CLS).toBeLessThan(0.1); // Google's recommended maximum
+		expect(allMetrics.FCP).toBeLessThan(2000, {
+			message: '⚡ FCP should be under 2 seconds for good user experience'
+		});
+		expect(allMetrics.LCP).toBeLessThan(2500, {
+			message: '⚡ LCP should be under 2.5 seconds per Core Web Vitals standards'
+		});
+		expect(allMetrics.TTI).toBeLessThan(3500, {
+			message: '⚡ TTI should be under 3.5 seconds for responsive interaction'
+		});
+		expect(allMetrics.CLS).toBeLessThan(0.1, {
+			message: '📊 CLS should be under 0.1 to prevent layout shifts'
+		});
 
 		// Additional assertions on other metrics
-		expect(allMetrics.TTFB).toBeLessThan(800); // 800ms
-		expect(allMetrics.domLoad).toBeLessThan(1500); // 1.5 seconds
+		expect(allMetrics.TTFB).toBeLessThan(800, {
+			message: '🚀 TTFB should be under 800ms for quick server response'
+		});
+		expect(allMetrics.domLoad).toBeLessThan(1500, {
+			message: '📄 DOM should load under 1.5 seconds for fast initial rendering'
+		});
 	});
 });

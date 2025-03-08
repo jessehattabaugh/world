@@ -22,16 +22,24 @@ test.describe('Core user journeys', () => {
 			// Try a more reliable selector - either the specific heading text or a more general approach
 			try {
 				// Increase timeout and use a more specific selector if possible
-				await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10000 });
+				await expect(page.getByRole('heading', { level: 1 })).toBeVisible({
+					timeout: 10000,
+					message: '🔍 Main heading should be visible on homepage'
+				});
 			} catch (e) {
 				console.log('Could not find h1, trying alternative selector');
 				// Alternative approach - look for any heading if h1 specifically isn't found
-				await expect(page.locator('h1, h2')).toBeVisible({ timeout: 5000 });
+				await expect(page.locator('h1, h2')).toBeVisible({
+					timeout: 5000,
+					message: '🔍 Some heading should be visible on homepage'
+				});
 			}
 
 			// Continue with the rest of the test
 			await page.getByRole('link', { name: /about/i }).click();
-			await expect(page).toHaveURL(/.*about/);
+			await expect(page).toHaveURL(/.*about/, {
+				message: '🧭 URL should include "about" after navigation'
+			});
 	});
 
 	test('user preferences are respected', async ({ page }) => {
@@ -52,7 +60,9 @@ test.describe('Core user journeys', () => {
 		const newIsDarkMode = await page.evaluate(() => {
 			return document.documentElement.classList.contains('dark-mode');
 		});
-		expect(newIsDarkMode).not.toBe(initialIsDarkMode);
+		expect(newIsDarkMode).not.toBe(initialIsDarkMode, {
+			message: '🌓 Theme should change after clicking toggle'
+		});
 
 		// Reload the page to verify persistence
 		await page.reload();
@@ -61,7 +71,9 @@ test.describe('Core user journeys', () => {
 		const persistedIsDarkMode = await page.evaluate(() => {
 			return document.documentElement.classList.contains('dark-mode');
 		});
-		expect(persistedIsDarkMode).toBe(newIsDarkMode);
+		expect(persistedIsDarkMode).toBe(newIsDarkMode, {
+			message: '💾 Theme preference should be remembered after page reload'
+		});
 	});
 
 	test('site is responsive across devices', async ({ page }) => {
@@ -71,17 +83,23 @@ test.describe('Core user journeys', () => {
 
 		// Elements should be laid out for desktop
 		const isMenuVisible = await page.getByRole('navigation').isVisible();
-		expect(isMenuVisible).toBeTruthy();
+		expect(isMenuVisible).toBeTruthy({
+			message: '🖥️ Navigation menu should be visible on desktop'
+		});
 
 		// Test on mobile viewport
 		await page.setViewportSize({ width: 375, height: 667 });
 		await page.goto('/');
 
 		// Verify key elements are still accessible on mobile
-		await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+		await expect(page.getByRole('heading', { level: 1 })).toBeVisible({
+			message: '📱 Main heading should be visible on mobile'
+		});
 
 		// Take screenshot to verify layout
-		await expect(page).toHaveScreenshot('mobile-homepage.png');
+		await expect(page).toHaveScreenshot('mobile-homepage.png', {
+			message: '📸 Mobile homepage should match baseline screenshot'
+		});
 	});
 
 	test('animations respect user preferences', async ({ page }) => {
@@ -93,7 +111,9 @@ test.describe('Core user journeys', () => {
 		await page.getByRole('link', { name: /about/i }).click();
 
 		// Verify we reached the destination
-		await expect(page).toHaveURL(/.*about/);
+		await expect(page).toHaveURL(/.*about/, {
+			message: '♿ Navigation should work with reduced motion preference'
+		});
 
 		// Note: This is hard to test directly, but the key is that we're testing
 		// with the reducedMotion media feature enabled
@@ -107,4 +127,5 @@ test.describe('Core user journeys', () => {
  * 3. Checking across different viewports
  * 4. Verifying preference persistence
  * 5. Using screenshots for visual verification
+ * 6. Adding emojis to assertions for better readability
  */

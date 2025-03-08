@@ -9,6 +9,28 @@ import { wait } from '../utils/test-helpers.js';
 describe('Accessibility Flows', () => {
   const getPage = createPageFixture();
 
+  // Added from example.test.js
+  it('animations respect user preferences', async () => {
+    const page = getPage();
+
+    // Emulate a user who prefers reduced motion
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(getBaseUrl());
+
+    // Trigger a navigation that would normally animate
+    const aboutLink = page.getByRole('link', { name: /about/i });
+    await aboutLink.click();
+    await wait(300);
+
+    // Verify we reached the destination
+    const url = page.url();
+    assert.ok(url.includes('about'),
+      '♿ Navigation should work with reduced motion preference');
+
+    // Note: This is hard to test directly, but the key is that we're testing
+    // with the reducedMotion media feature enabled
+  });
+
   it('should navigate the site using only keyboard', async () => {
     const page = getPage();
     await page.goto(getBaseUrl());

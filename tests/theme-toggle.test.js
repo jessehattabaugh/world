@@ -42,13 +42,50 @@ test.describe('Theme Toggle', () => {
 		}
 	}
 
+	// Added from example.test.js
+	test('user preferences are respected', async ({ page }) => {
+		await page.goto('/');
+
+		// Test theme toggle functionality
+		const themeToggle = page.getByRole('switch', { name: /toggle theme/i });
+
+		// Get initial theme state
+		const initialIsDarkMode = await page.evaluate(() => {
+			return document.documentElement.classList.contains('dark-mode');
+		});
+
+		// Change theme
+		await themeToggle.click();
+
+		// Verify theme changed
+		const newIsDarkMode = await page.evaluate(() => {
+			return document.documentElement.classList.contains('dark-mode');
+		});
+		expect(newIsDarkMode).not.toBe(initialIsDarkMode, {
+			message: '🌓 Theme should change after clicking toggle'
+		});
+
+		// Reload the page to verify persistence
+		await page.reload();
+
+		// Verify preference was remembered
+		const persistedIsDarkMode = await page.evaluate(() => {
+			return document.documentElement.classList.contains('dark-mode');
+		});
+		expect(persistedIsDarkMode).toBe(newIsDarkMode, {
+			message: '💾 Theme preference should be remembered after page reload'
+		});
+	});
+
 	test('toggle functionality changes theme', async ({ page }) => {
 		await clearPreferences(page);
 		await page.goto('/');
 
 		// Find the theme toggle
 		const themeToggle = await findToggleElement(page);
-		await expect(themeToggle).toBeVisible();
+		await expect(themeToggle).toBeVisible({
+			message: '🔍 Theme toggle should be visible on the page'
+		});
 
 		// Get initial theme state
 		const initialIsDark = await page.evaluate(() => {
@@ -56,19 +93,25 @@ test.describe('Theme Toggle', () => {
 		});
 
 		// Take screenshot before clicking
-		await expect(themeToggle).toHaveScreenshot('theme-toggle-before-click-baseline.png');
+		await expect(themeToggle).toHaveScreenshot('theme-toggle-before-click-baseline.png', {
+			message: '📸 Theme toggle should match baseline before click'
+		});
 
 		// Click toggle and check if theme changed
 		await themeToggle.click();
 		await page.waitForTimeout(300);
 
 		// Take screenshot after clicking
-		await expect(themeToggle).toHaveScreenshot('theme-toggle-after-click-baseline.png');
+		await expect(themeToggle).toHaveScreenshot('theme-toggle-after-click-baseline.png', {
+			message: '📸 Theme toggle should match baseline after click'
+		});
 
 		const newIsDark = await page.evaluate(() => {
 			return document.documentElement.classList.contains('dark-mode');
 		});
-		expect(newIsDark).not.toBe(initialIsDark);
+		expect(newIsDark).not.toBe(initialIsDark, {
+			message: '🌓 Theme mode should toggle between light and dark'
+		});
 	});
 
 	test('toggle remembers preference after reload', async ({ page }) => {

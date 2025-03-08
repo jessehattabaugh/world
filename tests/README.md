@@ -21,6 +21,7 @@ To ensure our web application works correctly for all users by testing in real b
 - Console messages in tests follow the project standard format
 - Tests must be independent and able to run in isolation
 - Tests must be deterministic - they should pass consistently without flakiness
+- We use emojis in test assertions to make them more descriptive and easier to scan
 
 ## Related Documentation
 
@@ -75,7 +76,7 @@ npm run test:update-snapshots
 npm run test:update-performance
 
 # Run just the theme toggle tests
-npm run test:theme
+npx playwright test theme-toggle.test.js
 ```
 
 ## Test Types
@@ -89,9 +90,9 @@ Example from `example.test.js`:
 ```javascript
 test('new visitor can navigate the site', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ message: '🔍 Heading should be visible on homepage' });
   await page.getByRole('link', { name: /about/i }).click();
-  await expect(page).toHaveURL(/.*about/);
+  await expect(page).toHaveURL(/.*about/, { message: '🧭 URL should contain "about" after navigation' });
 });
 ```
 
@@ -106,10 +107,10 @@ npm run test:update-snapshots
 Example from `theme-toggle.test.js`:
 
 ```javascript
-await expect(themeToggle).toHaveScreenshot('theme-toggle-before-click-baseline.png');
+await expect(themeToggle).toHaveScreenshot('theme-toggle-before-click-baseline.png', { message: '📸 Theme toggle should match baseline before click' });
 await themeToggle.click();
 await page.waitForTimeout(300);
-await expect(themeToggle).toHaveScreenshot('theme-toggle-after-click-baseline.png');
+await expect(themeToggle).toHaveScreenshot('theme-toggle-after-click-baseline.png', { message: '📸 Theme toggle should match baseline after click' });
 ```
 
 ### Performance Tests
@@ -125,7 +126,7 @@ Example using performance utilities:
 ```javascript
 const metrics = await getBrowserPerformanceMetrics(page);
 await assertPerformanceBaseline('homepage', metrics);
-expect(metrics.FCP).toBeLessThan(2000); // First Contentful Paint under 2s
+expect(metrics.FCP).toBeLessThan(2000, { message: '⚡ First Contentful Paint should be under 2s' });
 ```
 
 ## Writing Effective Tests
@@ -137,6 +138,7 @@ When adding new features, write tests that:
 3. Test across **multiple browsers and devices**
 4. Include **visual regression** and **performance** tests
 5. Verify **accessibility** requirements are met
+6. Use **emojis** in assertions to make them more descriptive
 
 ### Best Practices
 
@@ -145,6 +147,25 @@ When adding new features, write tests that:
 - Test for accessibility: `page.keyboard.press('Tab')` to verify keyboard navigation
 - Focus on user flows: Simulate complete journeys like registration or checkout
 - Keep tests independent: Each test should run in isolation
+- Add descriptive emojis: Use relevant emojis in test assertions for better readability
+
+## Common Emoji Usage in Tests
+
+Here's our standardized emoji usage for different test types:
+
+- 📱 Mobile testing
+- 🖥️ Desktop testing
+- 🌓 Theme testing (dark/light)
+- 📸 Visual regression tests
+- ⚡ Performance tests
+- ♿ Accessibility tests
+- 🧭 Navigation tests
+- 🖱️ Mouse interaction tests
+- ⌨️ Keyboard interaction tests
+- 🔍 Visibility checks
+- 💾 Data persistence tests
+- 🌐 Network tests
+- 🔒 Security tests
 
 ## Performance Testing System
 
@@ -222,7 +243,7 @@ Try these solutions:
 1. **Check element existence**: Verify the element actually exists in your app in the current state
 2. **Increase timeout**: For slow-loading elements, increase the timeout:
    ```javascript
-   await expect(element).toBeVisible({ timeout: 10000 });
+   await expect(element).toBeVisible({ timeout: 10000, message: '🔍 Element should become visible' });
    ```
 3. **Use networkidle**: Wait for network to be idle before assertions:
    ```javascript

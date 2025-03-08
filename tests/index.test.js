@@ -25,7 +25,9 @@ test.describe('Homepage', () => {
 		await page.waitForTimeout(500);
 
 		// Take a screenshot of the entire page
-		await expect(page).toHaveScreenshot('homepage-desktop-baseline.png');
+		await expect(page).toHaveScreenshot('homepage-desktop-baseline.png', {
+			message: '📸 Homepage desktop view should match baseline'
+		});
 	});
 
 	// Test for mobile viewport
@@ -45,7 +47,9 @@ test.describe('Homepage', () => {
 			console.log('Heading level 1 not found, continuing test');
 		}
 
-		await expect(page).toHaveScreenshot('homepage-mobile-baseline.png');
+		await expect(page).toHaveScreenshot('homepage-mobile-baseline.png', {
+			message: '📱 Homepage mobile view should match baseline'
+		});
 	});
 
 	// Test for accessibility-specific features
@@ -62,10 +66,14 @@ test.describe('Homepage', () => {
 		});
 
 		// Verify something is actually focused
-		expect(focusedElement).toBeTruthy();
+		expect(focusedElement).toBeTruthy({
+			message: '⌨️ An element should be focused after pressing Tab'
+		});
 
 		// Take a screenshot with the focus visible
-		await expect(page).toHaveScreenshot('homepage-keyboard-focus-baseline.png');
+		await expect(page).toHaveScreenshot('homepage-keyboard-focus-baseline.png', {
+			message: '📸 Keyboard focus indicators should match baseline'
+		});
 	});
 
 	// Performance testing for homepage
@@ -81,13 +89,19 @@ test.describe('Homepage', () => {
 
 		// Skip strict assertions for metrics which may vary in test environments
 		if (metrics.FCP !== undefined && metrics.FCP > 0) {
-			expect(metrics.FCP).toBeLessThan(5000); // More lenient threshold for CI/test environments
+			expect(metrics.FCP).toBeLessThan(5000, {
+				message: '⚡ FCP should be under 5 seconds in test environment'
+			});
 		}
 		if (metrics.LCP !== undefined && metrics.LCP > 0) {
-			expect(metrics.LCP).toBeLessThan(5000); // More lenient threshold for CI/test environments
+			expect(metrics.LCP).toBeLessThan(5000, {
+				message: '⚡ LCP should be under 5 seconds in test environment'
+			});
 		}
 		if (metrics.CLS !== undefined) {
-			expect(metrics.CLS).toBeLessThan(0.25); // More lenient threshold for CI/test environments
+			expect(metrics.CLS).toBeLessThan(0.25, {
+				message: '📊 CLS should be under 0.25 in test environment'
+			});
 		}
 	});
 
@@ -112,9 +126,17 @@ test.describe('Homepage', () => {
 		await assertPerformanceBaseline('homepage-lighthouse', scores);
 
 		// Check against absolute thresholds
-		expect(scores.performance).toBeGreaterThanOrEqual(90);
-		expect(scores.accessibility).toBeGreaterThanOrEqual(90);
-		expect(scores['best-practices']).toBeGreaterThanOrEqual(90);
-		expect(scores.seo).toBeGreaterThanOrEqual(90);
+		expect(scores.performance).toBeGreaterThanOrEqual(90, {
+			message: '📊 Lighthouse performance score should be at least 90'
+		});
+		expect(scores.accessibility).toBeGreaterThanOrEqual(90, {
+			message: '♿ Lighthouse accessibility score should be at least 90'
+		});
+		expect(scores['best-practices']).toBeGreaterThanOrEqual(90, {
+			message: '✅ Lighthouse best practices score should be at least 90'
+		});
+		expect(scores.seo).toBeGreaterThanOrEqual(90, {
+			message: '🔍 Lighthouse SEO score should be at least 90'
+		});
 	});
 });

@@ -154,4 +154,31 @@ describe('Responsive Behavior Flows', () => {
       console.log(`Lazy loading: ${imageAudit.lazyLoaded} of ${imageAudit.total} images use lazy loading`);
     });
   });
+
+  // Added from example.test.js
+  it('site is responsive across devices', async () => {
+    const page = getPage();
+
+    // Test on desktop viewport
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(getBaseUrl());
+
+    // Elements should be laid out for desktop
+    const navigation = page.getByRole('navigation');
+    const isMenuVisible = await navigation.isVisible().catch(() => {return false});
+    assert.ok(isMenuVisible, '🖥️ Navigation menu should be visible on desktop');
+
+    // Test on mobile viewport
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto(getBaseUrl());
+
+    // Verify key elements are still accessible on mobile
+    const heading = page.getByRole('heading', { level: 1 });
+    assert.ok(await heading.isVisible().catch(() => {return false}),
+      '📱 Main heading should be visible on mobile');
+
+    // Take screenshot to verify layout
+    const mobileScreenshot = await expectScreenshot(page, 'mobile-homepage');
+    assert.ok(mobileScreenshot, '📸 Mobile homepage should match baseline screenshot');
+  });
 });

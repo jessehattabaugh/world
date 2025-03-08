@@ -31,7 +31,10 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
 	workers: process.env.CI ? 1 : undefined,
-	reporter: [['html', { open: 'never' }], ['list']],
+	reporter: [
+		['html', { open: 'never' }],
+		['list', { printSteps: true }]
+	],
 
 	// Configure the flat snapshot directory
 	snapshotDir: './snapshots',
@@ -43,15 +46,6 @@ export default defineConfig({
 			maxDiffPixelRatio: 0.05,
 			// Use a naming convention that includes "baseline" for base snapshots
 			snapshotPathTemplate: '{snapshotDir}/{arg}{ext}',
-		},
-		// Set performance thresholds
-		toPassPerformanceThreshold: {
-			// Core Web Vitals thresholds
-			firstContentfulPaint: 2000, // 2 seconds
-			largestContentfulPaint: 2500, // 2.5 seconds
-			timeToInteractive: 3500, // 3.5 seconds
-			cumulativeLayoutShift: 0.1, // Google's recommended maximum
-			totalBlockingTime: 200, // 200 milliseconds
 		},
 	},
 
