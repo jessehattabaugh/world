@@ -111,26 +111,6 @@ await page.waitForTimeout(300);
 await expect(themeToggle).toHaveScreenshot('theme-toggle-after-click-baseline.png');
 ```
 
-### Accessibility Tests
-
-These tests ensure the site works for all users:
-
-- Keyboard navigation testing
-- Screen reader compatibility
-- WCAG compliance checks
-
-Example:
-
-```javascript
-test('toggle is keyboard accessible', async ({ page }) => {
-  await page.goto('/');
-  await page.keyboard.press('Tab');
-  // Check if toggle is focused...
-  await page.keyboard.press('Enter');
-  // Verify the toggle was activated...
-});
-```
-
 ### Performance Tests
 
 Performance tests monitor core web vitals and prevent regressions:

@@ -49,9 +49,9 @@ To build a web site that is tested end-to-end in real browsers, authored in web 
 
 ## Getting Started
 
-1. Install dependencies: `npm install`
-2. Configure your site: `npm run configure` (or manually edit `public/config.js`)
-3. Start development server: `npm start`
+1. Install dependencies by running `npm install`
+2. Configure your site: `npm run configure` (or manually edit the `public/config.js` file)
+3. Start the development server with `npm start`
 
 ### Development Scripts
 
