@@ -207,3 +207,29 @@ When tests fail:
 3. Verify if the failure is consistent or intermittent
 4. Check if the failure occurs in only specific environments
 5. Review recent code changes that might have affected the test
+
+## Common Test Failures and Solutions
+
+### Element Not Found Timeouts
+
+If you encounter timeouts like:
+```
+Error: Timed out 5000ms waiting for expect(locator).toBeVisible()
+```
+
+Try these solutions:
+
+1. **Check element existence**: Verify the element actually exists in your app in the current state
+2. **Increase timeout**: For slow-loading elements, increase the timeout:
+   ```javascript
+   await expect(element).toBeVisible({ timeout: 10000 });
+   ```
+3. **Use networkidle**: Wait for network to be idle before assertions:
+   ```javascript
+   await page.goto('/', { waitUntil: 'networkidle' });
+   ```
+4. **Add debugging**: Log page content to see what's actually available:
+   ```javascript
+   console.log(await page.content());
+   ```
+5. **Use alternative selectors**: If the preferred selector isn't working, try alternatives
