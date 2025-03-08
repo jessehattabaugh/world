@@ -7,8 +7,19 @@ import { test, expect } from '@playwright/test';
  * rather than implementation details
  */
 
+// Helper function to set dark mode before test
+async function enableDarkMode(page) {
+	// Set dark mode via localStorage before page loads
+	await page.context().addInitScript(() => {
+		window.localStorage.setItem('theme-preference', 'dark');
+	});
+}
+
 test.describe('Core user journeys', () => {
 	test('new visitor can navigate the site', async ({ page }) => {
+			// Start with dark mode
+			await enableDarkMode(page);
+
 			// Navigate to the homepage
 			await page.goto('/', { waitUntil: 'networkidle' });
 
@@ -36,13 +47,16 @@ test.describe('Core user journeys', () => {
 			}
 
 			// Continue with the rest of the test
-			await page.getByRole('link', { name: /about/i }).click();
+			// Use a more specific selector to avoid matching multiple links
+			await page.getByRole('link', { name: 'About', exact: true }).click();
 			await expect(page).toHaveURL(/.*about/, {
 				message: '🧭 URL should include "about" after navigation'
 			});
 	});
 
 	test('user preferences are respected', async ({ page }) => {
+		// Start with dark mode
+		await enableDarkMode(page);
 		await page.goto('/');
 
 		// Test theme toggle functionality

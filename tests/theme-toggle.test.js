@@ -15,6 +15,13 @@ if (!fs.existsSync(snapshotDir)) {
 	fs.mkdirSync(snapshotDir, { recursive: true });
 }
 
+// Helper function to set dark mode before tests
+async function enableDarkMode(page) {
+	await page.context().addInitScript(() => {
+		window.localStorage.setItem('theme-preference', 'dark');
+	});
+}
+
 test.describe('Theme Toggle', () => {
 	// Setup helper to clear preferences before tests
 	async function clearPreferences(page) {
@@ -42,6 +49,11 @@ test.describe('Theme Toggle', () => {
 		}
 	}
 
+	// Start tests in dark mode
+	test.beforeEach(async ({ page }) => {
+		await enableDarkMode(page);
+	});
+
 	// Added from example.test.js
 	test('user preferences are respected', async ({ page }) => {
 		await page.goto('/');
@@ -52,6 +64,11 @@ test.describe('Theme Toggle', () => {
 		// Get initial theme state
 		const initialIsDarkMode = await page.evaluate(() => {
 			return document.documentElement.classList.contains('dark-mode');
+		});
+
+		// Verify we start in dark mode
+		expect(initialIsDarkMode).toBeTruthy({
+			message: '🌓 Page should start in dark mode'
 		});
 
 		// Change theme

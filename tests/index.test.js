@@ -65,10 +65,8 @@ test.describe('Homepage', () => {
 			return el?.tagName !== 'BODY'; // Check if focus moved from body
 		});
 
-		// Verify something is actually focused
-		expect(focusedElement).toBeTruthy({
-			message: '⌨️ An element should be focused after pressing Tab'
-		});
+		// Verify something is actually focused - FIX: remove object parameter from toBeTruthy()
+		expect(focusedElement, '⌨️ An element should be focused after pressing Tab').toBeTruthy();
 
 		// Take a screenshot with the focus visible
 		await expect(page).toHaveScreenshot('homepage-keyboard-focus-baseline.png', {
