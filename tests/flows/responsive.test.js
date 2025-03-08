@@ -66,7 +66,7 @@ describe('Responsive Behavior Flows', () => {
 
       const desktopNavigation = await page.evaluate(() => {
         const nav = document.querySelector('nav');
-        if (!nav) return { exists: false };
+        if (!nav) {return { exists: false };}
 
         return {
           exists: true,
@@ -139,12 +139,12 @@ describe('Responsive Behavior Flows', () => {
         return {
           total: images.length,
           responsive: images.filter(img =>
-            img.srcset || // Has srcset
+            {return img.srcset || // Has srcset
             img.sizes || // Has sizes
             img.parentElement?.tagName === 'PICTURE' || // Inside picture element
-            img.loading === 'lazy' // Uses lazy loading
+            img.loading === 'lazy'} // Uses lazy loading
           ).length,
-          lazyLoaded: images.filter(img => img.loading === 'lazy').length
+          lazyLoaded: images.filter(img => {return img.loading === 'lazy'}).length
         };
       });
 

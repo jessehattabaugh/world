@@ -166,12 +166,36 @@ test.describe('Theme Toggle', () => {
 		await expect(page).toHaveScreenshot('theme-toggle-system-light-baseline.png');
 	});
 
-	test('theme toggle component meets performance baseline', async ({ page }) => {
+	test('theme toggle component meets performance baseline', async ({ page, browserName }) => {
 		await clearPreferences(page);
 		await page.goto('/');
 
-		// Find the theme toggle
-		const themeToggle = await findToggleElement(page);
+		// Find the theme toggle with additional wait and retry logic
+		let themeToggle = null;
+		const maxRetries = 3;
+
+		for (let attempt = 0; attempt < maxRetries && !themeToggle; attempt++) {
+			// Wait longer between attempts
+			if (attempt > 0) {
+				console.log(`Retry attempt ${attempt + 1} to find theme toggle`);
+				await page.waitForTimeout(1000);
+			}
+
+			themeToggle = await findToggleElement(page);
+		}
+
+		if (!themeToggle) {
+			console.error('Could not find theme toggle element after multiple attempts');
+			// Take a screenshot for debugging
+			await page.screenshot({ path: 'toggle-not-found.png' });
+
+			// Log the page HTML for debugging
+			const html = await page.content();
+			console.log('Page HTML:', `${html.substring(0, 1000)  }...`);
+		}
+
+		// Now check if the element is there before attempting to interact
+		await expect(themeToggle).not.toBeNull();
 		await expect(themeToggle).toBeVisible();
 
 		// Click toggle and measure performance
@@ -218,6 +242,46 @@ test.describe('Theme Toggle', () => {
 	 * Helper function to try multiple selector strategies to find the theme toggle
 	 */
 	async function findToggleElement(page) {
+		const isMobileSafari = await page.evaluate(() => {
+			const {userAgent} = navigator;
+			return /iPhone|iPad/i.test(userAgent) && /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent);
+		});
+
+		// In mobile Safari, we might need additional waiting time or different selectors
+		if (isMobileSafari) {
+			// Try multiple selectors that might match the theme toggle
+			console.log('Mobile Safari detected, using enhanced toggle detection');
+
+			// Wait longer for mobile Safari
+			await page.waitForTimeout(1000);
+
+			// Try different possible selectors for the theme toggle
+			const selectors = [
+				'[data-testid="theme-toggle"]',
+				'.theme-toggle',
+				'button[aria-label*="theme"]',
+				'button.theme-switch',
+				// Add any other potential selectors
+			];
+
+			// Try each selector
+			for (const selector of selectors) {
+				try {
+					const element = await page.$(selector);
+					if (element) {
+						console.log(`Found theme toggle with selector: ${selector}`);
+						return element;
+					}
+				} catch (e) {
+					console.log(`Selector ${selector} failed: ${e.message}`);
+				}
+			}
+
+			console.error('Theme toggle not found in mobile Safari with any known selectors');
+			return null;
+		}
+
+		// Original implementation for other browsers
 		// Try various selector strategies in order of preference
 
 		// 1. Proper accessible switch role

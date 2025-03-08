@@ -87,7 +87,7 @@ describe('Responsive Behavior', () => {
           const rect = el.getBoundingClientRect();
 
           // Skip hidden elements
-          if (rect.width === 0 || rect.height === 0) return;
+          if (rect.width === 0 || rect.height === 0) {return;}
 
           if (rect.width < minRecommendedSize || rect.height < minRecommendedSize) {
             results.tooSmall++;

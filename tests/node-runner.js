@@ -46,9 +46,9 @@ function findTestFiles(pattern) {
 
   // Also include any tests in the root test directory matching the pattern
   const rootFiles = fs.readdirSync(__dirname)
-    .filter(file => file.endsWith('.test.js') &&
-      (pattern === '' || file.toLowerCase().includes(pattern.toLowerCase())))
-    .map(file => path.join(__dirname, file));
+    .filter(file => {return file.endsWith('.test.js') &&
+      (pattern === '' || file.toLowerCase().includes(pattern.toLowerCase()))})
+    .map(file => {return path.join(__dirname, file)});
 
   testFiles.push(...rootFiles);
 
@@ -86,10 +86,10 @@ if (testFiles.length <= 1) {
   process.exit(1);
 }
 
-console.log(`Running tests${pattern ? ' matching: ' + pattern : ''}`);
+console.log(`Running tests${pattern ? ` matching: ${  pattern}` : ''}`);
 console.log('Test files:');
 testFiles.forEach((file, i) => {
-  if (i > 0) console.log(`- ${path.relative(__dirname, file)}`);
+  if (i > 0) {console.log(`- ${path.relative(__dirname, file)}`);}
 });
 
 // Run tests with Node.js test runner
