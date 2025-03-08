@@ -1,14 +1,18 @@
 {
-  "timestamp": "2025-03-08T21:41:15.403Z",
+  "timestamp": "2025-03-08T22:28:40.350Z",
   "metrics": {
-    "TTFB": 2,
-    "DOMContentLoaded": 17,
-    "Load": 484,
-    "FCP": 127,
-    "LCP": 0,
-    "memory": null,
-    "CLS": 0,
-    "resourceCount": 9,
-    "scriptDuration": 467
+    "TTFB": 1.299999998882413,
+    "DOMContentLoaded": 100.59999999962747,
+    "Load": 102,
+    "FCP": 116,
+    "LCP": 116,
+    "memory": {
+      "jsHeapSizeLimit": 3760000000,
+      "totalJSHeapSize": 10000000,
+      "usedJSHeapSize": 10000000
+    },
+    "CLS": 0.00018117268880208333,
+    "resourceCount": 6,
+    "scriptDuration": 1.199999999254942
   }
 }

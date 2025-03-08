@@ -1,10 +1,4 @@
 {
-  "timestamp": "2025-03-08T21:41:10.561Z",
-  "metrics": {
-    "performance": 0.9,
-    "accessibility": 0.9,
-    "best-practices": 0.9,
-    "seo": 0.9,
-    "pwa": 0
-  }
+  "timestamp": "2025-03-08T22:28:41.899Z",
+  "metrics": null
 }
