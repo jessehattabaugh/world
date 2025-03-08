@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-03-08T19:59:18.735Z",
+  "metrics": {
+    "TTFB": 41,
+    "domLoad": 159,
+    "fullLoad": 162,
+    "FP": 156,
+    "FCP": 156,
+    "LCP": 156,
+    "CLS": 0,
+    "jsHeapSizeLimit": 3760000000,
+    "totalJSHeapSize": 10000000,
+    "usedJSHeapSize": 10000000
+  }
+}

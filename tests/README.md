@@ -20,6 +20,7 @@ To ensure our web application works correctly for all users by testing in real b
 - We test complete user journeys, not just isolated components
 - Console messages in tests follow the project standard format
 - Tests must be independent and able to run in isolation
+- Tests must be deterministic - they should pass consistently without flakiness
 
 ## Related Documentation
 
@@ -178,3 +179,31 @@ npm run test:update-snapshots
 ```
 
 For more details on visual testing, see the [Visual Testing Documentation](../snapshots/README.md).
+
+## Test Reliability and Passing Criteria
+
+To ensure tests pass consistently:
+
+1. **Deterministic assertions** - Tests should have clear pass/fail criteria with appropriate timeouts
+2. **Stable selectors** - Use stable selectors that won't break with minor UI changes
+3. **Isolated test environments** - Each test should run independently without state interference
+4. **Proper setup/teardown** - Tests should clean up after themselves
+5. **Appropriate waiting** - Use proper waiting techniques instead of arbitrary timeouts
+
+### Common Causes of Test Failures
+
+- **Timing issues** - Use `waitFor` functions instead of fixed timeouts
+- **Environmental differences** - Test in environments that match production closely
+- **Selector brittleness** - Prefer role-based and accessible selectors
+- **Resource constraints** - Ensure test environments have adequate resources
+- **API inconsistencies** - Mock external APIs when necessary for consistency
+
+### Debugging Failed Tests
+
+When tests fail:
+
+1. Check the test logs and screenshots in the `test-results/` directory
+2. Run the specific failing test in UI mode: `npm run test:ui -- -g "test name"`
+3. Verify if the failure is consistent or intermittent
+4. Check if the failure occurs in only specific environments
+5. Review recent code changes that might have affected the test
