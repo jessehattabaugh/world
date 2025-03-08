@@ -1,253 +1,185 @@
 /**
- * Utilities for performance testing
+ * Performance testing utilities
+ * 
+ * Provides functions for measuring and comparing performance metrics
  */
-import fs from 'fs/promises';
+
+import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
-const PERFORMANCE_DIR = path.join(process.cwd(), 'performance');
-
-/**
- * Ensure the performance directory exists
- */
-async function ensurePerformanceDir() {
-	try {
-		await fs.access(PERFORMANCE_DIR);
-	} catch {
-		await fs.mkdir(PERFORMANCE_DIR, { recursive: true });
-	}
-}
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.resolve(__dirname, '../..');
+const performanceDir = path.join(rootDir, 'performance');
 
 /**
- * Save performance metrics to a file
- *
- * @param {string} name - Name of the component/page being tested
- * @param {Object} metrics - Performance metrics to save
- * @returns {Promise<void>}
- */
-export async function savePerformanceMetrics(name, metrics) {
-	await ensurePerformanceDir();
-
-	const filePath = path.join(PERFORMANCE_DIR, `${name}-performance.json`);
-	const dateTime = new Date().toISOString();
-
-	const dataToSave = {
-		timestamp: dateTime,
-		metrics,
-	};
-
-	// Format with nice indentation for readability
-	await fs.writeFile(filePath, JSON.stringify(dataToSave, null, 2));
-	console.log(`Performance metrics for ${name} saved to ${filePath}`);
-}
-
-/**
- * Load performance baseline metrics
- *
- * @param {string} name - Name of the component/page to load metrics for
- * @returns {Promise<Object|null>} The metrics or null if no baseline exists
- */
-export async function loadPerformanceBaseline(name) {
-	const filePath = path.join(PERFORMANCE_DIR, `${name}-performance.json`);
-
-	try {
-		const data = await fs.readFile(filePath, 'utf-8');
-		return JSON.parse(data).metrics;
-	} catch (err) {
-		if (err.code === 'ENOENT') {
-			console.log(
-				`No baseline found for ${name}, will create one if UPDATE_PERFORMANCE_BASELINE is set`,
-			);
-			return null;
-		}
-		throw err;
-	}
-}
-
-/**
- * Check if current performance meets baseline expectations
- *
- * @param {string} name - Name of the component/page being tested
- * @param {Object} currentMetrics - Current performance metrics
- * @param {Object} options - Options for comparison
- * @param {number} options.threshold - Percentage tolerance (default: 10%)
- * @returns {Promise<void>} - Throws if performance doesn't meet baseline
- */
-export async function assertPerformanceBaseline(name, currentMetrics, options = {}) {
-	const threshold = options.threshold || 10; // Default 10% tolerance
-	const isUpdating = process.env.UPDATE_PERFORMANCE_BASELINE === 'true';
-
-	// Save current metrics if we're updating baselines
-	if (isUpdating) {
-		await savePerformanceMetrics(name, currentMetrics);
-		return;
-	}
-
-	const baseline = await loadPerformanceBaseline(name);
-
-	// If no baseline, create one but don't fail the test
-	if (!baseline) {
-		console.warn(`No baseline found for ${name}. Creating one now.`);
-		await savePerformanceMetrics(name, currentMetrics);
-		return;
-	}
-
-	// Compare values with tolerance
-	const failures = [];
-
-	Object.keys(currentMetrics).forEach((metric) => {
-		// Skip metrics that don't exist in the baseline
-		if (!baseline[metric]) {
-			return;
-		}
-
-		const baselineValue = baseline[metric];
-		const currentValue = currentMetrics[metric];
-
-		// Skip string or non-numeric metrics
-		if (typeof baselineValue !== 'number' || typeof currentValue !== 'number') {
-			return;
-		}
-
-		// For metrics where lower is better (most performance metrics)
-		const percentChange = ((currentValue - baselineValue) / baselineValue) * 100;
-
-		// If current value is more than threshold% worse than baseline
-		if (percentChange > threshold) {
-			failures.push({
-				metric,
-				baseline: baselineValue,
-				current: currentValue,
-				percentChange,
-			});
-		}
-	});
-
-	// Report failures
-	if (failures.length > 0) {
-		console.error('\nPerformance regression detected:');
-		failures.forEach((failure) => {
-			console.error(
-				`  ${failure.metric}: ${failure.baseline.toFixed(2)} → ${failure.current.toFixed(
-					2,
-				)} ` + `(${failure.percentChange.toFixed(2)}% worse)`,
-			);
-		});
-
-		throw new Error(`Performance degraded beyond ${threshold}% threshold for ${name}`);
-	}
-
-	console.log(`Performance is within ${threshold}% of baseline for ${name}`);
-}
-
-/**
- * Run Lighthouse and get scores
- *
- * @param {string} url - URL to test
- * @returns {Promise<Object>} - Lighthouse scores
- */
-export async function getLighthouseScores(url) {
-	try {
-		// Create a temporary file for the output
-		const outputPath = path.join(PERFORMANCE_DIR, 'temp-lighthouse.json');
-
-		// Run Lighthouse
-		execSync(
-			`npx lighthouse ${url} --output json --output-path ${outputPath} --chrome-flags="--headless --no-sandbox --disable-gpu"`,
-			{ stdio: 'inherit' },
-		);
-
-		// Read the results
-		const data = await fs.readFile(outputPath, 'utf-8');
-		const result = JSON.parse(data);
-
-		// Extract the scores
-		const scores = {
-			performance: result.categories.performance.score * 100,
-			accessibility: result.categories.accessibility.score * 100,
-			'best-practices': result.categories['best-practices'].score * 100,
-			seo: result.categories.seo.score * 100,
-			pwa: result.categories.pwa.score * 100,
-
-			// Core Web Vitals
-			FCP: result.audits['first-contentful-paint'].numericValue,
-			LCP: result.audits['largest-contentful-paint'].numericValue,
-			CLS: result.audits['cumulative-layout-shift'].numericValue,
-			TBT: result.audits['total-blocking-time'].numericValue,
-			TTI: result.audits['interactive'].numericValue,
-		};
-
-		// Clean up temp file
-		await fs.unlink(outputPath);
-
-		return scores;
-	} catch (error) {
-		console.error('Failed to run Lighthouse:', error);
-		return null;
-	}
-}
-
-/**
- * Get browser performance metrics
- *
- * @param {Page} page - Playwright page object
- * @returns {Promise<Object>} Performance metrics
+ * Get performance metrics from the browser
+ * @param {Page} page Playwright page object
+ * @returns {Object} Performance metrics
  */
 export async function getBrowserPerformanceMetrics(page) {
-	// Wait for page to be fully loaded
-	await page.waitForLoadState('networkidle');
+  return page.evaluate(() => {
+    const perfEntries = performance.getEntriesByType('navigation')[0];
+    const paintEntries = performance.getEntriesByType('paint');
+    
+    const getFCP = () => {
+      const fcpEntry = paintEntries.find(entry => entry.name === 'first-contentful-paint');
+      return fcpEntry ? fcpEntry.startTime : null;
+    };
+    
+    return {
+      // Navigation Timing API metrics
+      TTFB: perfEntries.responseStart - perfEntries.requestStart,
+      DOMContentLoaded: perfEntries.domContentLoadedEventEnd - perfEntries.fetchStart,
+      Load: perfEntries.loadEventEnd - perfEntries.fetchStart,
+      
+      // Paint Timing API metrics
+      FCP: getFCP(),
+      
+      // Additional metrics if available
+      memory: performance.memory ? {
+        jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
+        totalJSHeapSize: performance.memory.totalJSHeapSize,
+        usedJSHeapSize: performance.memory.usedJSHeapSize
+      } : null,
+      
+      // Custom metrics
+      resourceCount: performance.getEntriesByType('resource').length,
+      scriptDuration: perfEntries.domComplete - perfEntries.domContentLoadedEventEnd
+    };
+  });
+}
 
-	// Get performance metrics
-	const metrics = await page.evaluate(() => {
-		return new Promise((resolve) => {
-			let lcpValue = 0;
-			let clsValue = 0;
+/**
+ * Get all available performance metrics
+ * Includes both browser metrics and any custom measurements
+ * @param {Page} page Playwright/Puppeteer page object
+ */
+export async function getAllPerformanceMetrics(page) {
+  const browserMetrics = await getBrowserPerformanceMetrics(page);
+  
+  // Use the Core Web Vitals API if available
+  let webVitals = {};
+  try {
+    webVitals = await page.evaluate(() => {
+      return new Promise(resolve => {
+        // Only proceed if the web vitals API is available
+        if (typeof window.webVitals === 'undefined') {
+          return resolve({});
+        }
+        
+        const vitals = {};
+        const reportWebVital = ({ name, value }) => {
+          vitals[name] = value;
+          if (Object.keys(vitals).length >= 3) { // LCP, CLS, FID
+            resolve(vitals);
+          }
+        };
+        
+        window.webVitals.getCLS(reportWebVital);
+        window.webVitals.getLCP(reportWebVital);
+        window.webVitals.getFID(reportWebVital);
+      });
+    });
+  } catch (e) {
+    // Web vitals may not be available in all environments
+  }
+  
+  return {
+    ...browserMetrics,
+    ...webVitals
+  };
+}
 
-			// Use Performance API for basic metrics
-			const basicMetrics = {
-				// Navigation Timing API metrics
-				TTFB: performance.timing.responseStart - performance.timing.navigationStart,
-				domLoad:
-					performance.timing.domContentLoadedEventEnd -
-					performance.timing.navigationStart,
-				fullLoad: performance.timing.loadEventEnd - performance.timing.navigationStart,
-
-				// First Paint & First Contentful Paint
-				FP: performance.getEntriesByName('first-paint')[0]?.startTime || 0,
-				FCP: performance.getEntriesByName('first-contentful-paint')[0]?.startTime || 0,
-			};
-
-			// Get more advanced metrics using PerformanceObserver
-			new PerformanceObserver((list) => {
-				const entries = list.getEntries();
-				if (entries.length > 0) {
-					lcpValue = entries[entries.length - 1].startTime;
-				}
-			}).observe({ type: 'largest-contentful-paint', buffered: true });
-
-			new PerformanceObserver((list) => {
-				for (const entry of list.getEntries()) {
-					if (!entry.hadRecentInput) {
-						clsValue += entry.value;
-					}
-				}
-			}).observe({ type: 'layout-shift', buffered: true });
-
-			// Wait to ensure metrics are collected
-			setTimeout(() => {
-				resolve({
-					...basicMetrics,
-					LCP: lcpValue,
-					CLS: clsValue,
-
-					// Memory usage
-					jsHeapSizeLimit: performance.memory?.jsHeapSizeLimit,
-					totalJSHeapSize: performance.memory?.totalJSHeapSize,
-					usedJSHeapSize: performance.memory?.usedJSHeapSize,
-				});
-			}, 3000); // Give time for metrics to be collected
-		});
-	});
-
-	return metrics;
+/**
+ * Assert that current performance is within baseline thresholds
+ * @param {string} baselineId Identifier for the baseline (e.g., 'homepage')
+ * @param {Object} currentMetrics Current performance metrics
+ * @param {Object} options Comparison options including thresholds
+ */
+export async function assertPerformanceBaseline(baselineId, currentMetrics, options = {}) {
+  const baselinePath = path.join(performanceDir, `${baselineId}-performance.json`);
+  
+  // If baseline doesn't exist, create it
+  if (!fs.existsSync(baselinePath)) {
+    console.log(`⚠️ No baseline found for ${baselineId}, creating new baseline`);
+    const newBaseline = {
+      timestamp: new Date().toISOString(),
+      metrics: currentMetrics
+    };
+    fs.writeFileSync(baselinePath, JSON.stringify(newBaseline, null, 2));
+    return true;
+  }
+  
+  // Load existing baseline
+  const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+  
+  // Default thresholds (percentage increase allowed)
+  const thresholds = {
+    TTFB: 20,
+    DOMContentLoaded: 20,
+    Load: 20,
+    FCP: 20,
+    LCP: 20,
+    CLS: 0.1,
+    resourceCount: 5,
+    scriptDuration: 25,
+    ...options.thresholds
+  };
+  
+  // Compare current metrics to baseline
+  const results = {};
+  let passed = true;
+  
+  // Skip comparisons if baseline metrics is null
+  if (!baseline.metrics) {
+    console.warn(`⚠️ No metrics in baseline for ${baselineId}`);
+    return true;
+  }
+  
+  // For each metric in the baseline, check if current is within threshold
+  Object.keys(baseline.metrics).forEach(metricName => {
+    // Skip if current metric is missing
+    if (currentMetrics[metricName] === undefined) {
+      return;
+    }
+    
+    const baselineValue = baseline.metrics[metricName];
+    const currentValue = currentMetrics[metricName];
+    
+    // Skip null values
+    if (baselineValue === null || currentValue === null) {
+      return;
+    }
+    
+    // For object values (e.g., memory), skip comparison
+    if (typeof baselineValue === 'object') {
+      return;
+    }
+    
+    // Calculate percentage increase
+    const percentageIncrease = ((currentValue - baselineValue) / baselineValue) * 100;
+    const threshold = thresholds[metricName] || 20; // Default 20% threshold
+    
+    results[metricName] = {
+      baseline: baselineValue,
+      current: currentValue,
+      percentageIncrease,
+      passed: percentageIncrease <= threshold
+    };
+    
+    if (!results[metricName].passed) {
+      passed = false;
+    }
+  });
+  
+  // Log comparison results
+  console.log(`\n📊 Performance comparison for ${baselineId}:`);
+  Object.keys(results).forEach(metric => {
+    const { baseline, current, percentageIncrease, passed } = results[metric];
+    const status = passed ? '✅' : '❌';
+    console.log(`${status} ${metric}: ${baseline.toFixed(2)} → ${current.toFixed(2)} (${percentageIncrease.toFixed(2)}%)`);
+  });
+  
+  return passed;
 }

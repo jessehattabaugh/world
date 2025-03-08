@@ -233,3 +233,59 @@ Try these solutions:
    console.log(await page.content());
    ```
 5. **Use alternative selectors**: If the preferred selector isn't working, try alternatives
+
+### Theme Toggle Element Not Found
+
+When encountering errors with the theme toggle test:
+
+```
+Error: Timed out 5000ms waiting for expect(locator).toBeVisible()
+Locator: getByRole('switch', { name: /toggle theme/i })
+```
+
+The theme toggle implementation may vary across projects. Try these solutions:
+
+1. **Check the actual implementation**:
+   - Use the browser inspector to determine the correct role and name
+   - Verify if it's using `role="switch"` or if it's a button or other element
+
+2. **Use multiple selector strategies**:
+   ```javascript
+   // Try different selectors in sequence
+   const toggle = await findToggleElement(page);
+
+   async function findToggleElement(page) {
+     // Try by role
+     try {
+       const toggle = page.getByRole('switch', { name: /theme/i });
+       if (await toggle.isVisible().catch(() => false)) return toggle;
+     } catch (e) {}
+
+     // Try by button with theme-related name
+     try {
+       const button = page.getByRole('button', { name: /(theme|dark|light)/i });
+       if (await button.isVisible().catch(() => false)) return button;
+     } catch (e) {}
+
+     // Try common selectors
+     const selectors = ['#theme-toggle', '.theme-toggle', '[data-testid="theme-toggle"]'];
+     for (const selector of selectors) {
+       const el = page.locator(selector);
+       if (await el.isVisible().catch(() => false)) return el;
+     }
+
+     return null;
+   }
+   ```
+
+3. **Debug the actual implementation**:
+   ```javascript
+   // Output HTML to see what's really there
+   console.log(await page.content());
+
+   // List all interactive elements
+   const buttons = await page.locator('button, [role="button"], [role="switch"]').all();
+   for (const btn of buttons) {
+     console.log(await btn.textContent(), await btn.getAttribute('aria-label'));
+   }
+   ```
