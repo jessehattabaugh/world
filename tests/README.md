@@ -1,6 +1,25 @@
 # Testing Documentation
 
-This directory contains end-to-end tests for the web boilerplate project. Our testing strategy focuses on real browser testing to ensure the best user experience.
+This directory contains end-to-end tests for the web boilerplate project.
+
+## Mission
+
+To ensure our web application works correctly for all users by testing in real browsers. Our tests verify functionality, accessibility, visual consistency, and performance to deliver a high-quality user experience across different devices and assistive technologies.
+
+## Rules
+
+- We test in real browsers, not with mocks or simulations
+- We use accessibility-friendly selectors (getByRole, getByLabel) rather than data-* attributes
+- Tests should access the page as a user or screenreader would
+- We write tests before implementing features (TDD)
+- Every PR requires passing tests before merging
+- We test across multiple browsers and devices
+- We include visual regression tests for all UI components
+- We monitor performance metrics against established baselines
+- We verify accessibility requirements in our tests
+- We test complete user journeys, not just isolated components
+- Console messages in tests follow the project standard format
+- Tests must be independent and able to run in isolation
 
 ## Related Documentation
 
