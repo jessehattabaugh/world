@@ -15,7 +15,7 @@
 	},
 	"scripts": {
 		"analyze": "lhci collect --url=http://localhost:3000 --output=html --outputPath=./lighthouse-report.html",
-		"audit": "lhci autorun --collect.staticDistDir=./www",
+		"audit": "lhci autorun --url=http://localhost:3000 --collect.staticDistDir=./www",
 		"lint": "eslint .",
 		"pretest": "node -e \"require('fs').mkdirSync('./snapshots', { recursive: true }); require('fs').mkdirSync('./performance', { recursive: true });\"",
 		"shots": "cross-env BASE_URL=${BASE_URL:-http://localhost:3000} node bin/screenshots-generate.js",
