@@ -7,6 +7,7 @@ This directory contains performance baseline metrics for the application.
 -   **[Main Project Documentation](../README.md)** - Overview of the entire project
 -   **[Visual Testing Documentation](../snapshots/README.md)** - Information about visual regression testing
 -   **[Web Components Documentation](../www/components/README.md)** - Documentation for web components including testing
+-   **[Testing Documentation](../tests/README.md)** - Comprehensive guide to testing strategy and implementation
 -   **[Performance Utilities](../tests/utils/performance-utils.js)** - Performance testing utility functions
 
 ## How Performance Testing Works

@@ -25,6 +25,7 @@ This project includes additional documentation in specific directories:
 -   **[Test Snapshots Documentation](/snapshots/README.md)** - Information about visual regression testing
 -   **[Performance Baselines Documentation](/performance/README.md)** - Details on performance testing and baselines
 -   **[Component Documentation](./www/components/README.md)** - Documentation for web components
+-   **[Testing Documentation](./tests/README.md)** - Comprehensive guide to testing strategy and implementation
 
 ## Getting Started
 
