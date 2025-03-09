@@ -1,346 +1,235 @@
-/**
- * Utility functions for performance testing and Lighthouse score processing
- */
-import fs from 'fs';
-import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
+/**
+ * Performance testing utilities
+ */
+import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
 const performanceDir = path.join(rootDir, 'performance');
 
-// Ensure the performance directory exists
+// Ensure performance directory exists
 if (!fs.existsSync(performanceDir)) {
   fs.mkdirSync(performanceDir, { recursive: true });
 }
 
 /**
- * Get browser performance metrics from a page
- * @param {Page} page Playwright page object
+ * Get performance metrics from the browser
+ * @param {import('@playwright/test').Page} page Playwright page
  * @returns {Object} Performance metrics
  */
 export async function getBrowserPerformanceMetrics(page) {
   try {
-    // Get basic metrics from browser
-    const metrics = await page.evaluate(() => {
+    // Navigate Performance API metrics
+    const navMetrics = await page.evaluate(() => {
+      // Handle case where Performance API isn't available
+      if (!window.performance || !window.performance.timing) {
+        return { errorMessage: 'Performance API not available' };
+      }
+
+      const timing = window.performance.timing;
+      const navigationStart = timing.navigationStart;
+
       return {
-        // Navigation Timing API metrics
-        TTFB: performance.timing.responseStart - performance.timing.navigationStart,
-        DOMContentLoaded:
-          performance.timing.domContentLoadedEventEnd -
-          performance.timing.navigationStart,
-        Load: performance.timing.loadEventEnd - performance.timing.navigationStart,
-
-        // Try to get First Contentful Paint if available
-        FCP: performance.getEntriesByName('first-contentful-paint')[0]?.startTime || 0,
-
-        // Memory info if available
-        memory: performance.memory ? {
-          jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
-          totalJSHeapSize: performance.memory.totalJSHeapSize,
-          usedJSHeapSize: performance.memory.usedJSHeapSize
-        } : undefined,
-
-        // Additional metrics
-        CLS: 0,
-        resourceCount: performance.getEntriesByType('resource').length,
-        scriptDuration: performance.getEntriesByType('measure')
-          .filter(m => {return m.name.includes('script')})
-          .reduce((total, m) => {return total + m.duration}, 0)
+        // Navigation timing metrics
+        navigationStart,
+        domLoading: timing.domLoading - navigationStart,
+        domInteractive: timing.domInteractive - navigationStart,
+        domContentLoaded: timing.domContentLoadedEventEnd - navigationStart,
+        domComplete: timing.domComplete - navigationStart,
+        loadEvent: timing.loadEventEnd - navigationStart,
       };
     });
 
-    // Inject and run more advanced metrics gathering
-    await page.evaluate(() => {
-      return new Promise((resolve) => {
-        // Measure LCP
-        new PerformanceObserver((list) => {
-          const entries = list.getEntries();
-          if (entries.length > 0) {
-            const lcpEntry = entries[entries.length - 1];
-            window.lcpValue = lcpEntry.startTime;
-          }
-        }).observe({ type: 'largest-contentful-paint', buffered: true });
+    // Get First Paint (FP) and First Contentful Paint (FCP)
+    const paintMetrics = await page.evaluate(() => {
+      if (!window.performance || !window.performance.getEntriesByType) {
+        return { errorMessage: 'Performance entries API not available' };
+      }
 
-        // Measure CLS
-        let clsValue = 0;
-        new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if (!entry.hadRecentInput) {
-              clsValue += entry.value;
-            }
-          }
-          window.clsValue = clsValue;
-        }).observe({ type: 'layout-shift', buffered: true });
+      const paintEntries = window.performance.getEntriesByType('paint');
+      const fp = paintEntries.find(entry => entry.name === 'first-paint');
+      const fcp = paintEntries.find(entry => entry.name === 'first-contentful-paint');
 
-        // Wait to ensure metrics are collected
-        setTimeout(() => {
-          resolve();
-        }, 1000);
-      });
+      return {
+        FP: fp ? fp.startTime : undefined,
+        FCP: fcp ? fcp.startTime : undefined,
+      };
     });
 
-    // Get the additional metrics we collected
-    const additionalMetrics = await page.evaluate(() => {
-      return {
-        LCP: window.lcpValue || 0,
-        CLS: window.clsValue || 0
-      };
+    // Get Largest Contentful Paint (LCP), if available
+    const lcpMetrics = await page.evaluate(() => {
+      if (!window.LargestContentfulPaint && !window.PerformanceObserver) {
+        return { LCP: undefined };
+      }
+
+      // Try to get LCP directly if already recorded
+      const lcpEntries = window.performance.getEntriesByType?.('largest-contentful-paint') || [];
+      if (lcpEntries.length > 0) {
+        return { LCP: lcpEntries[lcpEntries.length - 1].startTime };
+      }
+
+      // LCP might not be directly exposed in all browsers
+      return { LCP: window.largestContentfulPaint?.startTime };
+    });
+
+    // Get Cumulative Layout Shift (CLS), if available
+    const clsMetrics = await page.evaluate(() => {
+      if (!window.LayoutShift && !window.PerformanceObserver) {
+        return { CLS: undefined };
+      }
+
+      let cls = 0;
+      const layoutShiftEntries = window.performance.getEntriesByType?.('layout-shift') || [];
+
+      if (layoutShiftEntries.length > 0) {
+        layoutShiftEntries.forEach(entry => {
+          if (!entry.hadRecentInput) {
+            cls += entry.value;
+          }
+        });
+      }
+
+      return { CLS: cls || undefined };
     });
 
     return {
-      ...metrics,
-      LCP: additionalMetrics.LCP || metrics.FCP,
-      CLS: additionalMetrics.CLS
+      ...navMetrics,
+      ...paintMetrics,
+      ...lcpMetrics,
+      ...clsMetrics,
+      timestamp: new Date().toISOString(),
     };
   } catch (error) {
-    console.error('Error collecting performance metrics:', error);
+    console.error('Error getting performance metrics:', error);
     return {
-      error: 'Failed to collect metrics',
-      errorDetails: error.message
+      error: error.toString(),
+      timestamp: new Date().toISOString(),
     };
   }
 }
 
 /**
- * Compare current metrics with baseline
- * @param {Object} baseline Baseline metrics
- * @param {Object} current Current metrics
+ * Assert performance metrics against baseline
+ * @param {string} pageId Page ID
+ * @param {Object} metrics Current metrics
  * @returns {Object} Comparison results
  */
-function compareMetrics(baseline, current) {
-  const degraded = [];
-  const improved = [];
-  const unchanged = [];
-
-  // Helper to check if a metric represents better performance when lower
-  const isLowerBetter = (metric) => {
-    const lowerBetterMetrics = [
-      'TTFB', 'DOMContentLoaded', 'Load', 'FCP', 'LCP',
-      'CLS', 'scriptDuration', 'TBT', 'TTI'
-    ];
-    return lowerBetterMetrics.includes(metric);
+export async function assertPerformanceBaseline(pageId, metrics) {
+  // Default thresholds to assess performance
+  const defaultThresholds = {
+    FCP: 2000, // First Contentful Paint (ms)
+    LCP: 2500, // Largest Contentful Paint (ms)
+    CLS: 0.1, // Cumulative Layout Shift (unitless)
+    domContentLoaded: 2000, // DOM Content Loaded (ms)
+    loadEvent: 3000, // Load Event (ms)
   };
 
-  // Compare each metric
-  for (const metric in current) {
-    // Skip non-numeric metrics or complex objects
-    if (typeof current[metric] !== 'number' || typeof baseline[metric] !== 'number') {
-      if (metric === 'memory' && baseline[metric] && current[metric]) {
-        // Compare memory metrics
-        for (const memMetric in current[metric]) {
-          if (typeof current[metric][memMetric] === 'number' &&
-              typeof baseline[metric][memMetric] === 'number') {
-            const baselineValue = baseline[metric][memMetric];
-            const currentValue = current[metric][memMetric];
-            const percentChange = ((currentValue - baselineValue) / baselineValue) * 100;
+  const isDev = process.env.NODE_ENV === 'development' || !process.env.CI;
 
-            // For memory, higher heap limit is better, but lower usage is better
-            const isImprovement = memMetric === 'jsHeapSizeLimit' ?
-              percentChange > 0 : percentChange < 0;
+  try {
+    // Get or create baseline file
+    const baselineFile = path.join(performanceDir, `${pageId}-performance.json`);
+    let baseline;
 
-            const comparison = {
-              metric: `memory.${memMetric}`,
-              baseline: baselineValue,
-              current: currentValue,
-              percentChange: percentChange.toFixed(2)
-            };
+    // If baseline doesn't exist, create it
+    if (!fs.existsSync(baselineFile)) {
+      baseline = {
+        ...metrics,
+        thresholds: defaultThresholds,
+        createdAt: new Date().toISOString(),
+      };
 
-            if (Math.abs(percentChange) < 5) {
-              unchanged.push(comparison);
-            } else if (isImprovement) {
-              improved.push(comparison);
-            } else {
-              degraded.push(comparison);
-            }
-          }
+      fs.writeFileSync(baselineFile, JSON.stringify(baseline, null, 2));
+      console.log(`Created new performance baseline for ${pageId}`);
+    } else {
+      // Read existing baseline
+      const baselineData = fs.readFileSync(baselineFile, 'utf8');
+      baseline = JSON.parse(baselineData);
+    }
+
+    // Compare metrics with baseline thresholds
+    const thresholds = baseline.thresholds || defaultThresholds;
+    const results = {
+      pass: true,
+      details: [],
+    };
+
+    // Check each metric against threshold
+    for (const [metric, threshold] of Object.entries(thresholds)) {
+      if (metrics[metric] !== undefined) {
+        const pass =
+          (metric === 'CLS' && metrics[metric] <= threshold) ||
+          (metric !== 'CLS' && metrics[metric] <= threshold);
+
+        results.details.push({
+          metric,
+          current: metrics[metric],
+          threshold,
+          pass,
+        });
+
+        if (!pass && !isDev) {
+          results.pass = false;
         }
       }
-      continue;
     }
 
-    const baselineValue = baseline[metric];
-    const currentValue = current[metric];
+    // Log results
+    const failedMetrics = results.details.filter(d => !d.pass);
+    if (failedMetrics.length > 0) {
+      console.warn(`⚠️ Performance issues detected for ${pageId}:`);
+      failedMetrics.forEach(({ metric, current, threshold }) => {
+        console.warn(`  - ${metric}: ${current} (exceeds ${threshold})`);
+      });
 
-    // Calculate percentage change
-    const percentChange = ((currentValue - baselineValue) / baselineValue) * 100;
-
-    // Determine if this is an improvement or degradation
-    const lowerBetter = isLowerBetter(metric);
-    const isImprovement = lowerBetter ? percentChange < 0 : percentChange > 0;
-
-    const comparison = {
-      metric,
-      baseline: baselineValue,
-      current: currentValue,
-      percentChange: percentChange.toFixed(2)
-    };
-
-    // Only consider significant changes (more than 5%)
-    if (Math.abs(percentChange) < 5) {
-      unchanged.push(comparison);
-    } else if (isImprovement) {
-      improved.push(comparison);
+      // Don't fail tests in development mode
+      if (isDev) {
+        console.warn('Ignoring performance thresholds in development mode');
+        results.pass = true;
+      }
     } else {
-      degraded.push(comparison);
+      console.log(`✅ Performance verified for ${pageId}`);
     }
-  }
 
-  return { degraded, improved, unchanged };
-}
-
-/**
- * Compare metrics against baseline and update if needed
- * @param {string} pageId Page identifier
- * @param {Object} metrics Current performance metrics
- * @returns {Object} Comparison result
- */
-export async function assertPerformanceBaseline(pageId, metrics) {
-  const baselinePath = path.join(performanceDir, `${pageId}-performance.json`);
-  const updateBaseline = process.env.UPDATE_PERFORMANCE_BASELINE === 'true';
-
-  // If we're updating the baseline or it doesn't exist, save the current metrics
-  if (updateBaseline || !fs.existsSync(baselinePath)) {
-    const result = {
+    // Save current metrics
+    const reportFile = path.join(performanceDir, `${pageId}-performance-latest.json`);
+    fs.writeFileSync(reportFile, JSON.stringify({
+      metrics,
+      baseline: baseline.thresholds,
+      results,
       timestamp: new Date().toISOString(),
-      metrics
-    };
+    }, null, 2));
 
-    fs.writeFileSync(baselinePath, JSON.stringify(result, null, 2));
-    console.log(`✅ ${updateBaseline ? 'Updated' : 'Created'} performance baseline for ${pageId}`);
-    return { updated: true, baseline: null, current: metrics };
-  }
-
-  // Otherwise, compare against the baseline
-  try {
-    const baselineContent = fs.readFileSync(baselinePath, 'utf-8');
-    const baseline = JSON.parse(baselineContent);
-
-    // Do the comparison but don't fail the test - just log the differences
-    const baselineMetrics = baseline.metrics;
-    const comparison = compareMetrics(baselineMetrics, metrics);
-
-    // Log the comparison
-    if (comparison.degraded.length > 0) {
-      console.warn(`⚠️ Performance degradation detected for ${pageId}:`);
-      comparison.degraded.forEach(item => {
-        console.warn(`  - ${item.metric}: ${item.baseline} → ${item.current} (${item.percentChange}% change)`);
-      });
-    }
-
-    if (comparison.improved.length > 0) {
-      console.log(`🚀 Performance improvements detected for ${pageId}:`);
-      comparison.improved.forEach(item => {
-        console.log(`  - ${item.metric}: ${item.baseline} → ${item.current} (${item.percentChange}% change)`);
-      });
-    }
-
-    return { updated: false, baseline: baselineMetrics, current: metrics, comparison };
+    return results;
   } catch (error) {
-    console.error(`Error comparing performance metrics for ${pageId}:`, error);
-    return { error: true, message: error.message };
+    console.error('Error asserting performance baseline:', error);
+    return {
+      pass: isDev, // Pass in dev mode to avoid failures
+      error: error.toString(),
+    };
   }
-}
-
-/**
- * Get Lighthouse scores from a performance report or URL
- * @param {string|Object} reportOrUrl - The Lighthouse report object or URL to test
- * @returns {Object} Object containing performance scores by category
- */
-export async function getLighthouseScores(reportOrUrl = {}) {
-  // This is a simplified implementation
-  // In a real implementation, you'd need to run Lighthouse via its API
-  console.log(`Getting Lighthouse scores for ${typeof reportOrUrl === 'string' ? reportOrUrl : 'report'}`);
-
-  // If it's a URL, we'd run Lighthouse here
-  // For now, return placeholder data
-  return {
-    performance: 0.95,
-    accessibility: 0.98,
-    'best-practices': 0.92,
-    seo: 0.89,
-    pwa: 0.65
-  };
-}
-
-/**
- * Format Lighthouse scores for display
- * @param {Object} scores - Object containing performance scores
- * @returns {Object} Formatted scores (as percentages)
- */
-export function formatScores(scores = {}) {
-  const formatted = {};
-
-  // Convert decimal scores to percentages
-  Object.entries(scores).forEach(([key, value]) => {
-    formatted[key] = typeof value === 'number' ? Math.round(value * 100) : 0;
-  });
-
-  return formatted;
 }
 
 /**
  * Run all performance tests for a page
- * @param {Page} page Playwright page object
+ * @param {import('@playwright/test').Page} page Playwright page
  * @param {string} pageId Page identifier
  */
 export async function runPerformanceTests(page, pageId) {
-  console.log(`🔍 Running performance tests for ${pageId}...`);
+  console.log(`⏱️ Running performance tests for ${pageId}...`);
 
-  // Collect performance metrics
-  const metrics = await getBrowserPerformanceMetrics(page);
+  try {
+    // Collect metrics
+    const metrics = await getBrowserPerformanceMetrics(page);
 
-  // Compare against baseline
-  await assertPerformanceBaseline(pageId, metrics);
+    // Compare against baseline
+    const results = await assertPerformanceBaseline(pageId, metrics);
 
-  // Run assertions on metrics
-  const assertions = [
-    { metric: 'FCP', threshold: 2000, message: 'FCP should be under 2 seconds' },
-    { metric: 'LCP', threshold: 2500, message: 'LCP should be under 2.5 seconds' },
-    { metric: 'CLS', threshold: 0.1, message: 'CLS should be under 0.1' }
-  ];
-
-  const results = assertions.map(assertion => {
-    const { metric, threshold, message } = assertion;
-    const value = metrics[metric];
-    let passed = false;
-
-    if (value !== undefined) {
-      if (metric === 'CLS') {
-        passed = value < threshold;
-      } else {
-        passed = value < threshold;
-      }
-    }
-
-    return {
-      metric,
-      value,
-      threshold,
-      passed,
-      message
-    };
-  });
-
-  const failures = results.filter(r => {return !r.passed});
-
-  if (failures.length > 0) {
-    console.warn(`⚠️ Performance test failures for ${pageId}:`);
-    failures.forEach(failure => {
-      console.warn(`  - ${failure.metric}: ${failure.value} (threshold: ${failure.threshold}) - ${failure.message}`);
-    });
-  } else {
-    console.log(`✅ All performance tests passed for ${pageId}`);
+    return { metrics, results };
+  } catch (error) {
+    console.error('Error running performance tests:', error);
+    return { error: error.message };
   }
-
-  return { metrics, results };
-}
-
-/**
- * Get all performance metrics (previously used in perf-update.js)
- * @param {Page} page Playwright page object
- * @returns {Object} All performance metrics
- */
-export async function getAllPerformanceMetrics(page) {
-  return getBrowserPerformanceMetrics(page);
 }

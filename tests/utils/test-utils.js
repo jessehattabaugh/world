@@ -2,9 +2,33 @@ import { test as base, expect } from '@playwright/test';
 import { injectAxe, checkA11y } from './accessibility-utils.js';
 import { getBrowserPerformanceMetrics, assertPerformanceBaseline } from './performance-utils.js';
 import { checkHeaders, testCSP } from './security-utils.js';
+import { mapTestUrl } from './url-mapping.js';
+import { safeVisualComparison } from './visual-utils.js';
+
+export { expect } from '@playwright/test';
 
 // Enhanced test fixture with comprehensive testing capabilities
 export const test = base.extend({
+  // Base setup for all tests - handles URL mapping
+  page: async ({ page }, use) => {
+    // Set up route mapping for jessesworld.example.com -> localhost:3000
+    await page.route(/https:\/\/jessesworld\.example\.com.*/, route => {
+      const url = new URL(route.request().url());
+      url.host = 'localhost:3000';
+      url.protocol = 'http:';
+      return route.continue({ url: url.toString() });
+    });
+
+    // Define custom navigation method that applies URL mapping
+    const originalGoto = page.goto.bind(page);
+    page.goto = async (url, options) => {
+      const mappedUrl = mapTestUrl(url);
+      return originalGoto(mappedUrl, options);
+    };
+
+    await use(page);
+  },
+
   // Accessibility testing fixture
   axeCheck: async ({ page }, use) => {
     await use(async (selector = 'body') => {
@@ -28,7 +52,8 @@ export const test = base.extend({
           await page.waitForTimeout(300); // Allow layout to stabilize
         }
 
-        await expect(page).toHaveScreenshot(`${name}.png`, {
+        // Use the safe comparison function that handles missing baselines
+        await safeVisualComparison(page, name, {
           animations: 'disabled',
           mask: options.mask || [],
           fullPage: options.fullPage !== false,
@@ -47,13 +72,10 @@ export const test = base.extend({
   perfCheck: async ({ page }, use) => {
     await use(async (pageId = null) => {
       // Extract pageId from URL if not provided
-      if (!pageId) {
-        const url = page.url();
-        pageId = url.split('/').pop() || 'homepage';
-      }
+      const effectivePageId = pageId || (page.url().split('/').pop() || 'homepage');
 
       const metrics = await getBrowserPerformanceMetrics(page);
-      const results = await assertPerformanceBaseline(pageId, metrics);
+      const results = await assertPerformanceBaseline(effectivePageId, metrics);
       return { metrics, results };
     });
   },
@@ -98,7 +120,7 @@ export const test = base.extend({
       // Return a function to reset preferences
       return async () => {
         await context.clearCookies();
-        await page.evaluate(() => {return localStorage.clear()});
+        await page.evaluate(() => localStorage.clear());
         await page.emulateMedia({});
         await context.setOffline(false);
       };

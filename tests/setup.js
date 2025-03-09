@@ -2,9 +2,10 @@
  * Global test setup file for Node.js built-in test runner
  */
 import { afterEach, beforeEach } from 'node:test';
+
 import { chromium } from '@playwright/test';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 
 // Ensure snapshot directories exist
 const snapshotDir = path.join(process.cwd(), 'snapshots');
@@ -59,14 +60,15 @@ export async function teardownBrowser(browser) {
 
 // Reusable test fixture for pages
 export function createPageFixture() {
-  let browser;
-  let page;
+  // Use closure to maintain reference to page between hooks
+  let browserInstance;
+  let pageInstance;
 
   beforeEach(async () => {
     try {
       const setup = await setupBrowser();
-      browser = setup.browser;
-      page = setup.page;
+      browserInstance = setup.browser;
+      pageInstance = setup.page;
     } catch (error) {
       console.error('Error in beforeEach hook:', error);
       throw error;
@@ -75,13 +77,16 @@ export function createPageFixture() {
 
   afterEach(async () => {
     try {
-      await teardownBrowser(browser);
+      await teardownBrowser(browserInstance);
     } catch (error) {
       console.error('Error in afterEach hook:', error);
     }
   });
 
-  return () => {return page};
+  // Return a function that returns the current page
+  return function getPage() {
+    return pageInstance;
+  };
 }
 
 // Helper to take and compare screenshots

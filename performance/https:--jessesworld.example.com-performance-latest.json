@@ -1,0 +1,43 @@
+{
+  "metrics": {
+    "navigationStart": 1741495326488,
+    "domLoading": 6,
+    "domInteractive": 12,
+    "domContentLoaded": 40,
+    "domComplete": 1305,
+    "loadEvent": 1306,
+    "FCP": 1366,
+    "timestamp": "2025-03-09T04:42:08.894Z"
+  },
+  "baseline": {
+    "FCP": 2000,
+    "LCP": 2500,
+    "CLS": 0.1,
+    "domContentLoaded": 2000,
+    "loadEvent": 3000
+  },
+  "results": {
+    "pass": true,
+    "details": [
+      {
+        "metric": "FCP",
+        "current": 1366,
+        "threshold": 2000,
+        "pass": true
+      },
+      {
+        "metric": "domContentLoaded",
+        "current": 40,
+        "threshold": 2000,
+        "pass": true
+      },
+      {
+        "metric": "loadEvent",
+        "current": 1306,
+        "threshold": 3000,
+        "pass": true
+      }
+    ]
+  },
+  "timestamp": "2025-03-09T04:42:08.894Z"
+}

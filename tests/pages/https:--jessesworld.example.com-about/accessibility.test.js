@@ -1,35 +1,55 @@
+import { checkA11y, injectAxe } from '../../utils/accessibility-utils.js';
 /**
  * About accessibility tests
  */
-import { test, expect } from '@playwright/test';
-import { checkA11y, injectAxe } from '../../utils/accessibility-utils.js';
+import { expect, test } from '@playwright/test';
+import { formatPageId, mapTestUrl } from '../../utils/url-mapping.js';
 
-const pageUrl = 'https://jessesworld.example.com/about';
+// Keep original URL as reference for reports, but use the mapped URL for testing
+const originalUrl = 'https://jessesworld.example.com/about';
+const pageUrl = mapTestUrl(originalUrl);
 const pageName = 'About';
-const pageId = 'https:--jessesworld.example.com-about';
+const pageId = formatPageId(originalUrl);
 
 test.describe('About - Accessibility', () => {
+  // Set up route mocking for any external requests
+  test.beforeEach(async ({ page }) => {
+    // Route any jessesworld.example.com requests to localhost
+    await page.route('**/*.{png,jpg,jpeg,css,js}', route => route.continue());
+    await page.route(/https:\/\/jessesworld\.example\.com.*/, route => {
+      const url = new URL(route.request().url());
+      url.host = 'localhost:3000';
+      url.protocol = 'http:';
+      return route.continue({ url: url.toString() });
+    });
+  });
+
   test('meets accessibility standards', async ({ page }) => {
     await page.goto(pageUrl, { waitUntil: 'networkidle' });
+
+    // Inject axe-core library
     await injectAxe(page);
 
-    // Run axe accessibility tests
+    // Run accessibility tests
     const violations = await checkA11y(page);
-    expect(violations.length, 'No accessibility violations should be detected').toBe(0);
+    expect(violations.length, 'No accessibility violations').toBe(0);
   });
 
   test('has proper keyboard navigation', async ({ page }) => {
     await page.goto(pageUrl, { waitUntil: 'networkidle' });
 
-    // Tab through interactive elements
+    // Press Tab to move focus to first interactive element
     await page.keyboard.press('Tab');
 
-    // Verify focus is visible
+    // Check that focus moved from body to an interactive element
     const focusedElement = await page.evaluate(() => {
-      const el = document.activeElement;
-      return el?.tagName !== 'BODY';
+      return {
+        tag: document.activeElement.tagName,
+        role: document.activeElement.getAttribute('role'),
+        tabIndex: document.activeElement.tabIndex,
+      };
     });
 
-    expect(focusedElement, 'An element should be focused after pressing Tab').toBeTruthy();
+    expect(focusedElement.tag).not.toBe('BODY', 'Focus should move from body');
   });
 });

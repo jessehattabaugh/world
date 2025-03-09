@@ -1,6 +1,7 @@
-import { test, expect } from '../../utils/test-utils.js';
-import { createPageTest } from '../../fixtures/page-fixtures.js';
+import { expect, test } from '../../utils/test-utils.js';
+
 import { HomePage } from './home-page.js';
+import { createPageTest } from '../../fixtures/page-fixtures.js';
 
 // Run standard tests for this page
 createPageTest(HomePage);
@@ -10,6 +11,14 @@ test.describe('Homepage user interactions', () => {
   let homePage;
 
   test.beforeEach(async ({ page }) => {
+    // Set up URL route handling for jessesworld.example.com domains
+    await page.route(/https:\/\/jessesworld\.example\.com.*/, route => {
+      const url = new URL(route.request().url());
+      url.host = 'localhost:3000';
+      url.protocol = 'http:';
+      return route.continue({ url: url.toString() });
+    });
+
     homePage = new HomePage(page);
     await homePage.goto();
   });
@@ -83,6 +92,16 @@ test.describe('Homepage user interactions', () => {
 
 // Complete user journey tests
 test.describe('User journeys', () => {
+  test.beforeEach(async ({ page }) => {
+    // Set up URL route handling for jessesworld.example.com domains
+    await page.route(/https:\/\/jessesworld\.example\.com.*/, route => {
+      const url = new URL(route.request().url());
+      url.host = 'localhost:3000';
+      url.protocol = 'http:';
+      return route.continue({ url: url.toString() });
+    });
+  });
+
   test('first-time visitor explores homepage and navigates to projects', async ({ page, axeCheck, visualCheck }) => {
     // Start journey as new visitor
     const homePage = new HomePage(page);
