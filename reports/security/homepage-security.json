@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-03-09T00:56:45.453Z",
+  "headerChecks": {
+    "pass": false,
+    "details": [
+      {
+        "header": "x-content-type-options",
+        "found": false,
+        "message": "Required header \"x-content-type-options\" is missing"
+      }
+    ],
+    "message": "1 security headers failed checks"
+  },
+  "cspResult": {
+    "valid": false,
+    "message": "No Content Security Policy found"
+  },
+  "vulnerableLibraries": {
+    "scannedScripts": 4,
+    "vulnerabilities": []
+  }
+}

@@ -16,7 +16,7 @@
 	},
 	"scripts": {
 		"start": "npx serve ./www --listen 3000",
-		"test": "cross-env TEST_ENV=staging playwright test",
+		"test": "playwright test",
 		"lint": "eslint .",
 		"pretest": "node -e \"require('fs').mkdirSync('./snapshots', { recursive: true }); require('fs').mkdirSync('./performance', { recursive: true });\"",
 		"fix": "npm run lint -- --fix",
@@ -48,7 +48,8 @@
 		"generate:page": "node bin/generate-page.js",
 		"generate:tests": "node bin/generate-test-scaffold.js",
 		"scaffold": "npm-run-all --serial generate:tests",
-		"new:page": "node bin/generate-page.js"
+		"new:page": "node bin/generate-page.js",
+		"dev": "serve ./www --listen 3000"
 	},
 	"type": "module"
 }

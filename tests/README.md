@@ -165,3 +165,49 @@ npm run updperf
 npm run debug  # Start tests in debug mode
 npm run ui     # Start tests in UI mode
 ```
+
+# Testing Documentation
+
+## Test Structure
+
+```
+tests/
+├── pages/          # Page-specific tests
+├── utils/          # Test utilities
+│   ├── accessibility-utils.js  # A11y testing helpers
+│   ├── performance-utils.js    # Performance testing helpers
+│   ├── visual-utils.js        # Visual testing helpers
+│   └── security-utils.js      # Security testing helpers
+└── README.md       # This file
+```
+
+## Test Types
+
+### Accessibility Tests
+- WCAG 2.1 AA compliance using axe-core
+- Keyboard navigation verification
+- Focus management testing
+
+### Performance Tests
+- Core Web Vitals
+- Custom performance metrics
+- Resource loading optimization
+
+### Visual Tests
+- Cross-browser screenshot comparison
+- Responsive design verification
+- Theme switching tests
+
+### Security Tests
+- Content security policy verification
+- Sensitive data exposure checks
+- Security headers validation
+
+## Configuration
+
+Tests can be configured via:
+- `playwright.config.js` - Main test configuration
+- Environment variables:
+  - `TEST_ENV`: test environment (local/staging/prod)
+  - `BASE_URL`: custom test URL
+  - `CI`: CI environment detection

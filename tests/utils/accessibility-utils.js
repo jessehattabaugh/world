@@ -74,7 +74,7 @@ export async function injectAxe(page) {
   });
 
   // Wait for axe to be available
-  await page.waitForFunction(() => window.axe);
+  await page.waitForFunction(() => {return window.axe;});
 }
 
 /**

@@ -52,8 +52,17 @@ export default defineConfig({
 		},
 	},
 
+	// Dev server configuration
+	webServer: {
+		command: 'npm run dev',
+		port: 3000,
+		timeout: 120000,
+		reuseExistingServer: !process.env.CI,
+		cwd: process.cwd(),
+	},
+
 	use: {
-		baseURL: getBaseUrl(),
+		baseURL: 'http://localhost:3000',
 		trace: 'on-first-retry',
 		screenshot: 'only-on-failure',
 		video: 'retain-on-failure',

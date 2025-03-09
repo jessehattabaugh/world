@@ -1,6 +1,6 @@
-# Web Boilerplate
+# Jesse's World
 
-A modern web boilerplate with cutting-edge features
+Personal website with comprehensive automated testing suite.
 
 ## Mission
 
@@ -47,25 +47,67 @@ To build a web site that is tested end-to-end in real browsers, authored in web 
 - **[Performance Documentation](./performance/README.md)** - Performance testing and baselines
 - **[Components Documentation](./www/components/README.md)** - Web components
 
-## Getting Started
+## Setup
 
-1. Install dependencies by running `npm install`
-2. Configure your site: `npm run configure` (or manually edit the `public/config.js` file)
-3. Start the development server with `npm start`
+1. Install dependencies:
+```bash
+npm install
+```
 
-### Development Scripts
+2. Create required directories:
+```bash
+npm run pretest
+```
 
-- `npm start` - Start the development server
-- `npm run lint` - Run ESLint for code quality checks
-- `npm run fix` - Run ESLint and fix issues automatically
-- `npm test` - Run Playwright end-to-end tests
-- `npm run local` - Run tests against local environment
-- `npm run staging` - Run tests against staging environment
-- `npm run prod` - Run tests against production environment
-- `npm run debug` - Run tests in debug mode
-- `npm run ui` - Run tests with Playwright UI
-- `npm run report` - Show test reports
-- `npm run quick` - Run a quick test suite
+3. Start the development server:
+```bash
+npm run dev
+```
+
+## Testing
+
+The project includes several types of automated tests:
+
+- Accessibility (WCAG 2.1 AA compliance)
+- Performance metrics
+- Visual regression
+- Security checks
+
+### Running Tests
+
+```bash
+# Run all tests against local dev server
+npm test
+
+# Run against specific environments
+npm run local     # Local development
+npm run staging   # Staging environment
+npm run prod      # Production environment
+npm run url       # Custom URL via TEST_URL env var
+
+# Other test commands
+npm run debug     # Run tests with debugger
+npm run ui        # Run tests with UI mode
+npm run quick     # Run quick test suite
+
+# Update baselines
+npm run updshots  # Update visual snapshots
+npm run updperf   # Update performance baselines
+```
+
+### Test Reports
+
+- Test results: `playwright-report/`
+- Screenshots: `snapshots/`
+- Performance data: `performance/`
+- Accessibility reports: `reports/accessibility/`
+
+## Development
+
+- `npm run dev` - Start development server
+- `npm run lint` - Check code style
+- `npm run fix` - Fix code style issues
+- `npm run scaffold` - Generate new page templates
 
 ## Snapshot Management
 
