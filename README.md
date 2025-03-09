@@ -12,7 +12,7 @@ Personal website with comprehensive automated testing suite.
 - **NPM**: v7 or higher
 - **Modern Web Browser**: Chrome, Firefox, or Safari for running and developing
 
-> **Warning**: This project is intentionally designed to be Linux-only. It will not function correctly on Windows or macOS. We do not support or test in WSL, containers, or any non-Linux environment.
+> **Warning**: This project is intentionally designed to be Linux-only. It will not function correctly on Windows or macOS. I run it in WSL Ubuntu 24.04 LTS.
 
 ## Mission
 
@@ -36,7 +36,7 @@ To build a web site that is tested end-to-end in real browsers, authored in web 
   - `console.log`: Messages we want the user to see (not errors)
   - `console.warn`: Warnings that need user attention
   - `console.error`: Critical errors that prevent the app from proceeding
-- Console messages follow the format: `[shared emoji] message [unique emoji] functionName`
+- Console messages follow the format: `[emoji shared across file ] message [unique emoji] functionName`
 - Tests use accessible selectors (no data-* attributes) to access elements as a user or screenreader would
 - We use ARIA roles for better accessibility
 

@@ -34,8 +34,6 @@
 		"generate:tests": "node bin/generate-test-scaffold.js",
 		"lint": "eslint .",
 		"local": "playwright test",
-		"new:page": "node bin/generate-page.js",
-		"perf": "node bin/perf-update.js",
 		 "prod": "TEST_ENV=production playwright test --project=chromium",
 		"quick": "npm-run-all --serial clean lint local && npm run report",
 		"report": "playwright show-report",
@@ -44,8 +42,7 @@
 		"shots": "BASE_URL=${BASE_URL:-http://localhost:3000} node bin/screenshots-generate.js",
 		"staging": "TEST_ENV=staging playwright test",
 		"start": "npx serve ./www --listen 3000",
-		"test": "playwright test",
-		"ui": "playwright test --ui",
+		 "ui": "playwright test --ui",
 		"update": "npm run shots && npm run accept-all",
 		"url": "BASE_URL=${TEST_URL} playwright test"
 	},
