@@ -1,14 +1,14 @@
 /**
- * PixelBiome Ecosystem Simulator
+ * Jesse's World Ecosystem Simulator
  * A WebGPU-powered 2D ecosystem simulation
  *
- * @module PixelBiomeSimulator
+ * @module JessesWorldSimulator
  * @description A WebGPU-powered ecosystem simulation that can be integrated into any webpage.
  *
  * Usage:
- * 1. Import the module: import { PixelBiomeSimulator } from './scripts/engine/simulator.js';
+ * 1. Import the module: import { JessesWorldSimulator } from './scripts/engine/simulator.js';
  * 2. Create a container element: <div id="simulator-container"></div>
- * 3. Initialize the simulator: const simulator = new PixelBiomeSimulator('simulator-container');
+ * 3. Initialize the simulator: const simulator = new JessesWorldSimulator('simulator-container');
  * 4. Control the simulation:
  *    - simulator.startSimulation() - Start the simulation loop
  *    - simulator.stopSimulation() - Pause the simulation
@@ -19,7 +19,7 @@
  * Advanced configuration is available through the constructor's options parameter:
  *
  * ```javascript
- * const simulator = new PixelBiomeSimulator('container-id', {
+ * const simulator = new JessesWorldSimulator('container-id', {
  *   width: 1024,             // Canvas width in pixels (default: 800)
  *   height: 768,             // Canvas height in pixels (default: 600)
  *   autoStart: true,         // Start simulation automatically (default: false)
@@ -33,7 +33,7 @@
  * @example
  * // Basic initialization
  * document.addEventListener('DOMContentLoaded', () => {
- *   const simulator = new PixelBiomeSimulator('simulator-preview-canvas');
+ *   const simulator = new JessesWorldSimulator('simulator-preview-canvas');
  *
  *   // Add UI controls
  *   document.getElementById('start-button').addEventListener('click', simulator.startSimulation);
@@ -42,7 +42,7 @@
  * });
  */
 
-class PixelBiomeSimulator {
+class JessesWorldSimulator {
   /**
    * Creates a new ecosystem simulator instance
    * @param {string} canvasId - ID of the container element where the canvas should be placed
@@ -745,5 +745,5 @@ class PixelBiomeSimulator {
 // Initialize simulator
 document.addEventListener('DOMContentLoaded', () => {
   console.debug('🌱 DOM Content Loaded, creating simulator... 🚀');
-  window.simulator = new PixelBiomeSimulator('simulator-preview-canvas');
+  window.simulator = new JessesWorldSimulator('simulator-preview-canvas');
 });

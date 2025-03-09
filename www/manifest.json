@@ -3,7 +3,7 @@
 	"categories": [
 		"web"
 	],
-	"description": "Personal website and portfolio showcasing web development projects and thoughts on technology",
+	"description": "Jesse's World - Personal website and portfolio showcasing web development projects and thoughts on technology",
 	"display": "standalone",
 	"display_override": [
 		"window-controls-overlay",

@@ -1,12 +1,12 @@
 # Jesse's World
 
-## 🌱 PixelBiome: A WebGPU-powered Ecosystem Simulator
+## 🌱 Jesse's World: A WebGPU-powered Ecosystem Simulator
 
 ### Mission Statement
 
 Create a visually engaging, highly performant 2D ecosystem simulation running entirely in-browser. The simulator leverages the power of WebGPU shaders (WGSL) for parallelized lifeform interactions, Web Workers and OffscreenCanvas for distributed rendering, and Service Workers for state caching and persistence. Players can interactively manage the ecosystem, influencing evolution and ecological balance in a sandbox or scenario-driven environment. The project prioritizes maintainability, scalability, and correctness using Test-Driven Development (TDD) via Playwright.
 
-Our vision is to educate users on complex ecological concepts through interactive simulation, making principles of evolution, genetic adaptation, and ecosystem dynamics accessible to everyone. By visualizing these concepts in real-time, PixelBiome serves as both an educational tool and an engaging experience that demonstrates the capabilities of modern web technologies.
+Our vision is to educate users on complex ecological concepts through interactive simulation, making principles of evolution, genetic adaptation, and ecosystem dynamics accessible to everyone. By visualizing these concepts in real-time, Jesse's World serves as both an educational tool and an engaging experience that demonstrates the capabilities of modern web technologies.
 
 ## Features
 
