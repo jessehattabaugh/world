@@ -1,0 +1,27 @@
+:root {
+  /* Design Tokens */
+  --space-unit: 0.25rem;
+  --space-xs: calc(2 * var(--space-unit));
+  --space-sm: calc(4 * var(--space-unit));
+  --space-md: calc(6 * var(--space-unit));
+  --space-lg: calc(8 * var(--space-unit));
+  --space-xl: calc(12 * var(--space-unit));
+
+  /* Typography Scale */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+
+  /* Z-index Scale */
+  --z-negative: -1;
+  --z-elevate: 1;
+  --z-sticky: 100;
+  --z-drawer: 200;
+  --z-modal: 300;
+  --z-popover: 400;
+  --z-toast: 500;
+}
