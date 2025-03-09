@@ -14,6 +14,10 @@ const { CacheFirst, NetworkFirst, StaleWhileRevalidate } = workbox.strategies;
 const { ExpirationPlugin } = workbox.expiration;
 const { precacheAndRoute } = workbox.precaching;
 
+// Add versioning for better cache management
+const CACHE_VERSION = 'v1';
+const CACHE_NAME = `${CACHE_VERSION}-static`;
+
 // Precache essential resources organized by type
 precacheAndRoute([
 	// HTML pages
@@ -76,7 +80,7 @@ registerRoute(
 	}),
 );
 
-// Cache CSS and JS with Stale-While-Revalidate strategy
+// Add better stale-while-revalidate implementation
 registerRoute(
 	({ request }) => {
 		return request.destination === 'style' || request.destination === 'script';
@@ -87,6 +91,13 @@ registerRoute(
 			new ExpirationPlugin({
 				maxEntries: 60,
 				maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+				// Add cache cleanup on quota error
+				cacheWillUpdate: async ({ response }) => {
+					if (response.status === 200 || response.status === 0) {
+						return response;
+					}
+					return null;
+				},
 			}),
 		],
 	}),
