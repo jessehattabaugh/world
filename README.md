@@ -4,12 +4,15 @@ Personal website with comprehensive automated testing suite.
 
 ## System Requirements
 
-- **Linux Operating System**: This application is designed to run exclusively on Linux environments
+- **Linux Operating System**: This project is strictly Linux-only and will not work on other operating systems
+  - No Windows support (including WSL)
+  - No macOS support
+  - No containerized environments
 - **Node.js**: v16 or higher
 - **NPM**: v7 or higher
 - **Modern Web Browser**: Chrome, Firefox, or Safari for running and developing
 
-> **Note**: Windows and macOS are not officially supported. The application may work in WSL (Windows Subsystem for Linux) but is not tested in these environments.
+> **Warning**: This project is intentionally designed to be Linux-only. It will not function correctly on Windows or macOS. We do not support or test in WSL, containers, or any non-Linux environment.
 
 ## Mission
 
