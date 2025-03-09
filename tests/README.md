@@ -1,85 +1,167 @@
-# Testing Documentation
+# Integrated Testing Framework
 
-This document provides information about the available testing commands in this project.
+This document outlines our comprehensive testing framework that covers accessibility, performance, visual regression, security, and functional testing - all derived automatically from the sitemap.
 
-## Available Commands
+## Overview
 
-### Core Testing Commands
+Our testing framework automatically generates test scaffolds for each page in the application by reading the sitemap.xml file. Each page has tests for:
 
-| Command | Description |
-|---------|-------------|
-| `npm test` | Run the default test suite in staging environment |
-| `npm run b-local🧪` | Run tests in local environment |
-| `npm run b-staging🧪` | Run tests in staging environment |
-| `npm run b-prod🧪` | Run tests in production environment (Chromium only) |
-| `npm run c-quick🚄` | Run a quick test suite (clean snapshots, lint, local tests, and show report) |
-| `npm run c-full🏁` | Run all tests across environments with performance tests |
+- **Accessibility**: WCAG compliance and keyboard navigation
+- **Performance**: Core Web Vitals and performance metrics
+- **Visual Testing**: Screenshots for desktop and mobile
+- **Security**: Headers, CSP, and vulnerable libraries
+- **Functional**: User journeys and interactions
 
-### Test Utilities
+## Getting Started
 
-| Command | Description |
-|---------|-------------|
-| `npm run d-clean🧹` | Clean existing snapshots |
-| `npm run e-report📋` | Show the Playwright test report |
-| `npm run d-debug🐛` | Run tests in debug mode |
-| `npm run d-ui👀` | Run tests with Playwright UI mode |
-| `npm run z-run🏃` | Execute test runner script with CI detection |
+### Prerequisites
 
-### Visual & Performance Testing
+- Node.js (v16+)
+- Playwright installed (`npm install -g playwright`)
 
-| Command | Description |
-|---------|-------------|
-| `npm run g-shots📸` | Generate screenshots (using BASE_URL) |
-| `npm run g-updshots🔄` | Update test snapshots |
-| `npm run f-perf⚡` | Run performance update script |
-| `npm run f-updperf📊` | Update performance baseline |
-| `npm run analyze` | Run Lighthouse analysis and generate HTML report |
-| `npm run audit` | Run Lighthouse CI to test against performance thresholds |
-
-### Special Usage
-
-| Command | Description |
-|---------|-------------|
-| `npm run b-url🌐` | Run tests against a specific URL (set via TEST_URL env var) |
-| `npm run z-codegen🧩` | Generate Playwright test code using codegen tool |
-| `npm lint` | Run ESLint on the project |
-
-## Examples
+### Running Tests
 
 ```bash
-# Run a quick test cycle during development
-npm run c-quick🚄
+# Run all tests
+npm test
 
-# Debug tests interactively
-npm run d-debug🐛
+# Run tests for specific environments
+npm run local     # Local environment
+npm run staging   # Staging environment
+npm run prod      # Production environment
+npm run url       # Custom URL (set TEST_URL env variable)
 
-# Update visual snapshots after intentional UI changes
-npm run g-updshots🔄
-
-# Run full test suite for CI environments
-npm run c-full🏁
-
-# Run tests against a specific deployment
-TEST_URL=https://staging-example.com npm run b-url🌐
-
-# Run a Lighthouse audit and fail if thresholds aren't met
-npm run audit
-
-# Generate a Lighthouse report without enforcing thresholds
-npm run analyze
+# Run just a quick test suite
+npm run quick
 ```
 
-## Performance Thresholds
+## Page and Test Generation
 
-The `npm run audit` command will validate the following thresholds:
-- Performance score: 80% or higher
-- Accessibility score: 90% or higher
-- Best Practices score: 90% or higher
-- SEO score: 90% or higher
-- First Contentful Paint: 2000ms or less
-- Time to Interactive: 3500ms or less
-- Largest Contentful Paint: 2500ms or less
+### Creating a New Page
 
-These thresholds can be adjusted in the `lighthouserc.js` file.
+To create a new page and have tests automatically generated:
 
-Note: The `pretest` script will automatically create necessary directories before testing.
+```bash
+# Basic syntax
+npm run new:page [path] [optional-title]
+
+# Example: Create an About page
+npm run new:page /about "About Us"
+
+# Example: Create a nested page
+npm run new:page /products/featured "Featured Products"
+```
+
+This will:
+1. Create the HTML page in the correct location
+2. Add the page to sitemap.xml
+3. Generate test scaffolds automatically
+
+### Regenerating Test Scaffolds
+
+If you've updated your sitemap.xml or want to refresh all test scaffolds:
+
+```bash
+npm run generate:tests
+```
+
+## Test Structure
+
+Each page's tests are organized in the `/tests/pages/[page-id]/` directory with files:
+
+- `index.test.js` - Main test orchestrator
+- `accessibility.test.js` - A11y tests
+- `performance.test.js` - Performance tests
+- `visual.test.js` - Visual regression tests
+- `security.test.js` - Security tests
+
+## Performance Testing
+
+Performance testing is fully integrated into the testing framework rather than being a separate concern. Each page automatically:
+
+1. Captures Core Web Vitals (LCP, FCP, CLS, etc.)
+2. Compares against established baselines
+3. Flags regressions beyond acceptable thresholds
+4. Visualizes performance trends over time
+
+### Performance Scripts
+
+- `npm run perf` - Update performance baselines for all pages in sitemap
+- `npm run updperf` - Update performance baselines during test runs (uses current metrics as new baseline)
+- `npm run analyze` - Generate Lighthouse reports for performance analysis
+
+## Visual Testing
+
+Visual tests automatically capture screenshots at different viewport sizes and compare them with baselines.
+
+### Visual Testing Scripts
+
+- `npm run shots` - Generate screenshots for all pages
+- `npm run updshots` - Update visual baselines (when UI intentionally changes)
+
+## Accessibility Testing
+
+Accessibility tests use axe-core to validate WCAG compliance and test keyboard navigation patterns.
+
+## Security Testing
+
+Security tests check:
+- Proper HTTP security headers
+- Content Security Policy configuration
+- Detection of known vulnerable libraries
+
+## Configuration
+
+You can configure testing behavior in:
+
+- `playwright.config.js` - Playwright configuration
+- `.env` files - Environment-specific variables
+
+## Continuous Integration
+
+The testing framework is designed to run in CI environments. Set the `CI=true` environment variable to adjust behavior for CI.
+
+```bash
+# Run in CI mode
+CI=true npm test
+```
+
+## Utility Files
+
+- `tests/utils/accessibility-utils.js` - A11y testing utilities
+- `tests/utils/performance-utils.js` - Performance testing utilities
+- `tests/utils/visual-utils.js` - Visual testing utilities
+- `tests/utils/security-utils.js` - Security testing utilities
+
+## Best Practices
+
+1. **Keep Tests Independent**: Each test should function independently
+2. **Avoid Flaky Tests**: Ensure tests are deterministic and reliable
+3. **Use Page Objects**: Extract page-specific logic to page object files
+4. **Test Real User Flows**: Tests should mimic actual user behavior
+5. **Monitor Performance Trends**: Watch for performance regressions over time
+
+## Troubleshooting
+
+### Visual Snapshots Failing
+
+Check if the UI was intentionally changed. If so, update baselines:
+
+```bash
+npm run updshots
+```
+
+### Performance Tests Failing
+
+Verify if the performance regression is expected. If the changes are intentional, update the baseline:
+
+```bash
+npm run updperf
+```
+
+### Debugging Tests
+
+```bash
+npm run debug  # Start tests in debug mode
+npm run ui     # Start tests in UI mode
+```

@@ -36,6 +36,9 @@ export default defineConfig({
 		['list', { printSteps: true }]
 	],
 
+	// Group test files by page
+	testMatch: '**/tests/pages/**/*.test.js',
+
 	// Configure the flat snapshot directory
 	snapshotDir: './snapshots',
 

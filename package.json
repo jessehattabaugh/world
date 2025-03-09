@@ -8,41 +8,47 @@
 		"cross-env": "latest",
 		"eslint": "latest",
 		"globals": "latest",
-		 "node-fetch": "latest",
+		"node-fetch": "latest",
 		"npm-run-all": "latest",
 		"rimraf": "latest",
-		"serve": "latest"
+		"serve": "latest",
+		"xml2js": "latest"
 	},
 	"scripts": {
 		"start": "npx serve ./www --listen 3000",
 		"test": "cross-env TEST_ENV=staging playwright test",
 		"lint": "eslint .",
 		"pretest": "node -e \"require('fs').mkdirSync('./snapshots', { recursive: true }); require('fs').mkdirSync('./performance', { recursive: true });\"",
-		
-		"b-local🧪": "playwright test",
-		"b-staging🧪": "cross-env TEST_ENV=staging playwright test",
-		"b-prod🧪": "cross-env TEST_ENV=production playwright test --project=chromium",
-		"b-url🌐": "cross-env BASE_URL=${TEST_URL} playwright test",
-		
-		"c-quick🚄": "npm-run-all --serial d-clean🧹 lint b-local🧪 && npm run e-report📋",
-		"c-full🏁": "cross-env NODE_OPTIONS='--max-old-space-size=4096' npm-run-all --continue-on-error --serial d-clean🧹 lint b-local🧪 f-perf⚡ b-staging🧪 b-prod🧪 && npm run e-report📋",
-		
-		"d-clean🧹": "node bin/snapshots-clean.js",
-		"d-debug🐛": "playwright test --debug",
-		"d-ui👀": "playwright test --ui",
-		
-		"e-report📋": "playwright show-report",
-		
-		"f-perf⚡": "node bin/perf-update.js",
-		"f-updperf📊": "cross-env UPDATE_PERFORMANCE_BASELINE=true playwright test",
-		
-		"g-shots📸": "cross-env BASE_URL=${BASE_URL:-http://localhost:3000} node bin/screenshots-generate.js",
-		"g-updshots🔄": "playwright test --update-snapshots",
-		
+		"fix": "npm run lint -- --fix",
+
+		"local": "playwright test",
+		"staging": "cross-env TEST_ENV=staging playwright test",
+		"prod": "cross-env TEST_ENV=production playwright test --project=chromium",
+		"url": "cross-env BASE_URL=${TEST_URL} playwright test",
+
+		"quick": "npm-run-all --serial clean lint local && npm run report",
+
+		"clean": "node bin/snapshots-clean.js",
+		"debug": "playwright test --debug",
+		"ui": "playwright test --ui",
+
+		"report": "playwright show-report",
+
+		"perf": "node bin/perf-update.js",
+		"updperf": "cross-env UPDATE_PERFORMANCE_BASELINE=true playwright test",
+
+		"shots": "cross-env BASE_URL=${BASE_URL:-http://localhost:3000} node bin/screenshots-generate.js",
+		"updshots": "playwright test --update-snapshots",
+
 		"analyze": "lhci collect --url=http://localhost:3000 --output=html --outputPath=./lighthouse-report.html",
 		"audit": "lhci autorun --url=http://localhost:3000 --collect.staticDistDir=./www",
-		"z-codegen🧩": "playwright codegen http://localhost:3000",
-		"z-run🏃": "node bin/run-tests.js --ci=${CI:-false}"
+		"codegen": "playwright codegen http://localhost:3000",
+		"run": "node bin/run-tests.js --ci=${CI:-false}",
+
+		"generate:page": "node bin/generate-page.js",
+		"generate:tests": "node bin/generate-test-scaffold.js",
+		"scaffold": "npm-run-all --serial generate:tests",
+		"new:page": "node bin/generate-page.js"
 	},
 	"type": "module"
 }

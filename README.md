@@ -56,12 +56,16 @@ To build a web site that is tested end-to-end in real browsers, authored in web 
 ### Development Scripts
 
 - `npm start` - Start the development server
-- `npm run start:https` - Start with HTTPS for testing secure features
-- `npm run build` - Build for production (optimizes CSS)
 - `npm run lint` - Run ESLint for code quality checks
-- `npm run test` - Run Playwright end-to-end tests
-- `npm run test:ui` - Run Playwright tests with UI for debugging
-- `npm run analyze` - Analyze the site with Lighthouse
+- `npm run fix` - Run ESLint and fix issues automatically
+- `npm test` - Run Playwright end-to-end tests
+- `npm run local` - Run tests against local environment
+- `npm run staging` - Run tests against staging environment
+- `npm run prod` - Run tests against production environment
+- `npm run debug` - Run tests in debug mode
+- `npm run ui` - Run tests with Playwright UI
+- `npm run report` - Show test reports
+- `npm run quick` - Run a quick test suite
 
 ## Snapshot Management
 
@@ -70,28 +74,121 @@ To build a web site that is tested end-to-end in real browsers, authored in web 
 The project includes a utility script to regenerate snapshot baselines:
 
 ```bash
-npm run test:regenerate-baselines
+npm run updshots
 ```
 
-This script runs the tests with `--update-snapshots` flag and renames all snapshots to include "baseline" in the filename.
+This script runs the tests with `--update-snapshots` flag to update visual test baselines.
 
-#### New Command Line Options
+## Website Testing Framework
 
-The snapshot update script now supports several command-line options for more flexibility:
+A comprehensive testing framework that unifies accessibility, performance, visual, security, and functional testing.
 
-- `--skip-tests`: Only rename existing snapshots without running tests
-  ```bash
-  node bin/snapshots-update.js --skip-tests
-  ```
+## Features
 
-- `--test-file <path>`: Run tests and update snapshots for only the specified file
-  ```bash
-  node bin/snapshots-update.js --test-file tests/specific-test.js
-  ```
+- **Integrated Testing**: All testing types in a unified framework
+- **Sitemap-Based**: Automatically generates tests from your sitemap.xml
+- **Page Generator**: Create new pages with tests pre-configured
+- **Comprehensive Coverage**: Tests accessibility, performance, visuals, security, and functionality
 
-- `--dry-run`: Preview what files would be renamed without making any changes
-  ```bash
-  node bin/snapshots-update.js --dry-run
-  ```
+## Quick Start
 
-These options are helpful when dealing with test failures or when you only want to update specific test snapshots.
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+
+# Run all tests
+npm test
+
+# Create a new page
+npm run new:page /page-path "Page Title"
+
+# Generate/update test scaffolds from sitemap
+npm run generate:tests
+```
+
+## Testing Framework
+
+Our testing approach treats performance as an intrinsic part of UI acceptance testing rather than a separate concern. Tests are automatically generated from your sitemap.xml, ensuring consistent coverage across your site.
+
+For detailed information on the testing framework, see [Tests Documentation](./tests/README.md).
+
+## Key Scripts
+
+- `npm start` - Start local development server
+- `npm test` - Run all tests
+- `npm run local` - Run tests against local environment
+- `npm run staging` - Run tests against staging environment
+- `npm run prod` - Run tests against production environment
+- `npm run new:page` - Create a new page with test scaffolds
+- `npm run generate:tests` - Generate test scaffolds from sitemap
+- `npm run perf` - Update performance data for all pages from sitemap
+- `npm run updperf` - Update performance baselines during tests
+- `npm run shots` - Generate screenshots for all pages
+- `npm run updshots` - Update visual snapshots during tests
+- `npm run analyze` - Run Lighthouse analysis
+- `npm run audit` - Run full site audit with Lighthouse
+
+## Directory Structure
+
+```
+/
+├── bin/                # CLI tools and utilities
+│   ├── generate-page.js        # Page generator
+│   ├── generate-test-scaffold.js   # Test scaffold generator
+│   └── perf-update.js         # Performance baseline updater
+├── performance/        # Performance baselines
+├── snapshots/          # Visual test baselines
+├── tests/              # Test files
+│   ├── pages/          # Page-specific tests
+│   └── utils/          # Test utilities
+├── www/                # Website source files
+│   └── sitemap.xml     # Site structure used for test generation
+└── package.json        # Project configuration
+```
+
+## Documentation
+
+- [Tests Documentation](./tests/README.md)
+- [Performance Documentation](./performance/README.md)
+
+## Performance Testing
+
+Performance is tested as part of our standard test suite. Key metrics tracked:
+
+- **Core Web Vitals**: LCP, FCP, CLS
+- **Navigation Timing**: TTFB, DOM Content Loaded, Load
+- **Memory Usage**: JS Heap Size and utilization
+- **Custom Metrics**: Script execution time, resource counts
+
+## Integration with CI/CD
+
+Configure your CI/CD pipeline to run tests on each build:
+
+```yaml
+# Example GitHub Actions workflow
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+      - name: Run tests
+        run: npm test
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: playwright-report/
+          retention-days: 30
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
