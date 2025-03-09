@@ -9,6 +9,51 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
 
 /**
+ * Check keyboard accessibility
+ * @param {Page} page Playwright page object
+ * @returns {Object} Keyboard accessibility result
+ */
+async function checkKeyboardAccessibility(page) {
+  // Tab through interactive elements
+  await page.keyboard.press('Tab');
+
+  // Check if focus is visible
+  const focusedElement = await page.evaluate(() => {
+    const el = document.activeElement;
+    if (el?.tagName === 'BODY') {
+      return { visible: false, element: 'BODY' };
+    }
+
+    // Get computed style to check if focus is visible
+    const style = window.getComputedStyle(el);
+    const outlineStyle = style.getPropertyValue('outline-style');
+    const outlineWidth = style.getPropertyValue('outline-width');
+    const outlineColor = style.getPropertyValue('outline-color');
+
+    const hasFocusStyles =
+      outlineStyle !== 'none' &&
+      outlineWidth !== '0px' &&
+      outlineColor !== 'transparent';
+
+    return {
+      visible: hasFocusStyles,
+      element: el.tagName,
+      id: el.id,
+      classList: Array.from(el.classList)
+    };
+  });
+
+  if (!focusedElement.visible) {
+    return {
+      isAccessible: false,
+      reason: `Focus not visible after tabbing (focused element: ${focusedElement.element})`
+    };
+  }
+
+  return { isAccessible: true };
+}
+
+/**
  * Inject axe-core library into the page
  * @param {Page} page Playwright page object
  */
@@ -25,10 +70,11 @@ export async function injectAxe(page) {
         script.onload = resolve;
       });
     }
+    return Promise.resolve();
   });
 
   // Wait for axe to be available
-  await page.waitForFunction(() => {return window.axe});
+  await page.waitForFunction(() => window.axe);
 }
 
 /**
@@ -115,49 +161,4 @@ export async function runAccessibilityTests(page, pageId) {
   }
 
   return { violations, keyboardAccessible };
-}
-
-/**
- * Check keyboard accessibility
- * @param {Page} page Playwright page object
- * @returns {Object} Keyboard accessibility result
- */
-async function checkKeyboardAccessibility(page) {
-  // Tab through interactive elements
-  await page.keyboard.press('Tab');
-
-  // Check if focus is visible
-  const focusedElement = await page.evaluate(() => {
-    const el = document.activeElement;
-    if (el?.tagName === 'BODY') {
-      return { visible: false, element: 'BODY' };
-    }
-
-    // Get computed style to check if focus is visible
-    const style = window.getComputedStyle(el);
-    const outlineStyle = style.getPropertyValue('outline-style');
-    const outlineWidth = style.getPropertyValue('outline-width');
-    const outlineColor = style.getPropertyValue('outline-color');
-
-    const hasFocusStyles =
-      outlineStyle !== 'none' &&
-      outlineWidth !== '0px' &&
-      outlineColor !== 'transparent';
-
-    return {
-      visible: hasFocusStyles,
-      element: el.tagName,
-      id: el.id,
-      classList: Array.from(el.classList)
-    };
-  });
-
-  if (!focusedElement.visible) {
-    return {
-      isAccessible: false,
-      reason: `Focus not visible after tabbing (focused element: ${focusedElement.element})`
-    };
-  }
-
-  return { isAccessible: true };
 }

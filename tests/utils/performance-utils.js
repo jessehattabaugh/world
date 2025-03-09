@@ -103,59 +103,6 @@ export async function getBrowserPerformanceMetrics(page) {
 }
 
 /**
- * Compare metrics against baseline and update if needed
- * @param {string} pageId Page identifier
- * @param {Object} metrics Current performance metrics
- * @returns {Object} Comparison result
- */
-export async function assertPerformanceBaseline(pageId, metrics) {
-  const baselinePath = path.join(performanceDir, `${pageId}-performance.json`);
-  const updateBaseline = process.env.UPDATE_PERFORMANCE_BASELINE === 'true';
-
-  // If we're updating the baseline or it doesn't exist, save the current metrics
-  if (updateBaseline || !fs.existsSync(baselinePath)) {
-    const result = {
-      timestamp: new Date().toISOString(),
-      metrics
-    };
-
-    fs.writeFileSync(baselinePath, JSON.stringify(result, null, 2));
-    console.log(`✅ ${updateBaseline ? 'Updated' : 'Created'} performance baseline for ${pageId}`);
-    return { updated: true, baseline: null, current: metrics };
-  }
-
-  // Otherwise, compare against the baseline
-  try {
-    const baselineContent = fs.readFileSync(baselinePath, 'utf-8');
-    const baseline = JSON.parse(baselineContent);
-
-    // Do the comparison but don't fail the test - just log the differences
-    const baselineMetrics = baseline.metrics;
-    const comparison = compareMetrics(baselineMetrics, metrics);
-
-    // Log the comparison
-    if (comparison.degraded.length > 0) {
-      console.warn(`⚠️ Performance degradation detected for ${pageId}:`);
-      comparison.degraded.forEach(item => {
-        console.warn(`  - ${item.metric}: ${item.baseline} → ${item.current} (${item.percentChange}% change)`);
-      });
-    }
-
-    if (comparison.improved.length > 0) {
-      console.log(`🚀 Performance improvements detected for ${pageId}:`);
-      comparison.improved.forEach(item => {
-        console.log(`  - ${item.metric}: ${item.baseline} → ${item.current} (${item.percentChange}% change)`);
-      });
-    }
-
-    return { updated: false, baseline: baselineMetrics, current: metrics, comparison };
-  } catch (error) {
-    console.error(`Error comparing performance metrics for ${pageId}:`, error);
-    return { error: true, message: error.message };
-  }
-}
-
-/**
  * Compare current metrics with baseline
  * @param {Object} baseline Baseline metrics
  * @param {Object} current Current metrics
@@ -240,6 +187,59 @@ function compareMetrics(baseline, current) {
   }
 
   return { degraded, improved, unchanged };
+}
+
+/**
+ * Compare metrics against baseline and update if needed
+ * @param {string} pageId Page identifier
+ * @param {Object} metrics Current performance metrics
+ * @returns {Object} Comparison result
+ */
+export async function assertPerformanceBaseline(pageId, metrics) {
+  const baselinePath = path.join(performanceDir, `${pageId}-performance.json`);
+  const updateBaseline = process.env.UPDATE_PERFORMANCE_BASELINE === 'true';
+
+  // If we're updating the baseline or it doesn't exist, save the current metrics
+  if (updateBaseline || !fs.existsSync(baselinePath)) {
+    const result = {
+      timestamp: new Date().toISOString(),
+      metrics
+    };
+
+    fs.writeFileSync(baselinePath, JSON.stringify(result, null, 2));
+    console.log(`✅ ${updateBaseline ? 'Updated' : 'Created'} performance baseline for ${pageId}`);
+    return { updated: true, baseline: null, current: metrics };
+  }
+
+  // Otherwise, compare against the baseline
+  try {
+    const baselineContent = fs.readFileSync(baselinePath, 'utf-8');
+    const baseline = JSON.parse(baselineContent);
+
+    // Do the comparison but don't fail the test - just log the differences
+    const baselineMetrics = baseline.metrics;
+    const comparison = compareMetrics(baselineMetrics, metrics);
+
+    // Log the comparison
+    if (comparison.degraded.length > 0) {
+      console.warn(`⚠️ Performance degradation detected for ${pageId}:`);
+      comparison.degraded.forEach(item => {
+        console.warn(`  - ${item.metric}: ${item.baseline} → ${item.current} (${item.percentChange}% change)`);
+      });
+    }
+
+    if (comparison.improved.length > 0) {
+      console.log(`🚀 Performance improvements detected for ${pageId}:`);
+      comparison.improved.forEach(item => {
+        console.log(`  - ${item.metric}: ${item.baseline} → ${item.current} (${item.percentChange}% change)`);
+      });
+    }
+
+    return { updated: false, baseline: baselineMetrics, current: metrics, comparison };
+  } catch (error) {
+    console.error(`Error comparing performance metrics for ${pageId}:`, error);
+    return { error: true, message: error.message };
+  }
 }
 
 /**

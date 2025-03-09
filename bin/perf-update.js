@@ -26,7 +26,7 @@ const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
  */
 function urlToPageId(url) {
   // Remove protocol and domain
-  let id = url.replace(/^https?:\/\/[^\/]+/, '');
+  let id = url.replace(/^https?:\/[^/]+/, '');
   // Remove trailing slash
   id = id.replace(/\/$/, '');
   // Replace remaining slashes with dashes
@@ -144,10 +144,11 @@ async function updatePerformanceBaselines() {
   const browser = await chromium.launch();
 
   try {
-    // Measure performance for each page
-    for (const { id, url } of pages) {
-      await measurePagePerformance(browser, id, url);
-    }
+    // Measure performance for each page in parallel
+    const measurePromises = pages.map(({ id, url }) =>
+      measurePagePerformance(browser, id, url)
+    );
+    await Promise.all(measurePromises);
 
     // Also create a lighthouse performance baseline
     const lighthousePerf = {

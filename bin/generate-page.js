@@ -19,6 +19,28 @@ const rootDir = path.resolve(__dirname, '..');
 const wwwDir = path.join(rootDir, 'www');
 const sitemapPath = path.join(wwwDir, 'sitemap.xml');
 
+/**
+ * Generate a title from a URL path
+ * @param {string} urlPath URL path to convert to a title
+ * @returns {string} Generated title
+ */
+function generatePageTitle(urlPath) {
+  // Remove leading and trailing slashes
+  const cleanPath = urlPath.replace(/^\/|\/$/g, '');
+  
+  // If empty, it's the homepage
+  if (!cleanPath) return 'Homepage';
+  
+  // Get last segment of the path
+  const lastSegment = cleanPath.split('/').pop();
+  
+  // Convert to title case
+  return lastSegment
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 // Get arguments from command line
 const args = process.argv.slice(2);
 if (args.length < 1) {
@@ -28,28 +50,6 @@ if (args.length < 1) {
 
 const pagePath = args[0].startsWith('/') ? args[0] : `/${args[0]}`;
 const pageTitle = args[1] || generatePageTitle(pagePath);
-
-/**
- * Generate a title from a URL path
- * @param {string} urlPath URL path to convert to a title
- * @returns {string} Generated title
- */
-function generatePageTitle(urlPath) {
-  // Remove leading and trailing slashes
-  const cleanPath = urlPath.replace(/^\/|\/$/g, '');
-
-  // If empty, it's the homepage
-  if (!cleanPath) {return 'Homepage';}
-
-  // Get last segment of the path
-  const lastSegment = cleanPath.split('/').pop();
-
-  // Convert to title case
-  return lastSegment
-    .split('-')
-    .map(word => {return word.charAt(0).toUpperCase() + word.slice(1)})
-    .join(' ');
-}
 
 /**
  * Convert page path to filesystem path

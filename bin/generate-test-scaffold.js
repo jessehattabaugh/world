@@ -27,7 +27,7 @@ const sitemapPath = path.join(wwwDir, 'sitemap.xml');
  */
 function urlToId(url) {
   // Remove protocol and domain
-  let id = url.replace(/^https?:\/\/[^\/]+/, '');
+  let id = url.replace(/^https?:\/[^/]+/, '');
   // Remove trailing slash
   id = id.replace(/\/$/, '');
   // Replace remaining slashes with dashes
@@ -307,15 +307,17 @@ async function main() {
     console.log(`🌐 Found ${urls.length} URLs in sitemap.xml`);
 
     // Generate test scaffolds for each URL
-    for (const urlEntry of urls) {
-      const url = urlEntry.loc[0];
-      const baseUrl = url.replace(/^https?:\/\/[^\/]+/, '');
+    const generatePromises = urls.map(urlEntry => {
+      const [url] = urlEntry.loc;
+      const baseUrl = url.replace(/^https?:\/[^/]+/, '');
       const id = urlToId(baseUrl);
       const name = urlToName(baseUrl);
 
       console.log(`🔍 Processing: ${name} (${baseUrl})`);
-      await generateTestScaffold(baseUrl, id, name);
-    }
+      return generateTestScaffold(baseUrl, id, name);
+    });
+
+    await Promise.all(generatePromises);
 
     console.log('✅ Test scaffold generation complete!');
     console.log(`📁 Tests created in: ${testsDir}`);
