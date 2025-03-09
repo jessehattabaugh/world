@@ -2,6 +2,14 @@
 
 This document outlines our comprehensive testing framework that covers accessibility, performance, visual regression, security, and functional testing - all derived automatically from the sitemap.
 
+## System Requirements
+
+- **Linux Operating System**: The testing framework is designed to run exclusively on Linux
+- **Node.js**: v16 or higher
+- **Bash Shell**: Required for environment variable syntax in npm scripts
+
+> **Note**: This framework does not support Windows environments. For development on Windows machines, consider using WSL (Windows Subsystem for Linux).
+
 ## Overview
 
 Our testing framework automatically generates test scaffolds for each page in the application by reading the sitemap.xml file. Each page has tests for:

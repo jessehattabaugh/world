@@ -1,9 +1,9 @@
 {
-	"background_color": "#121212",
+	"background_color": "#000000",
 	"categories": [
 		"web"
 	],
-	"description": "A modern web boilerplate",
+	"description": "Personal website and portfolio showcasing web development projects and thoughts on technology",
 	"display": "standalone",
 	"display_override": [
 		"window-controls-overlay",
@@ -13,17 +13,17 @@
 		{
 			"purpose": "any maskable",
 			"sizes": "192x192",
-			"src": "/icon/192.png",
+			"src": "/images/icon-192.png",
 			"type": "image/png"
 		},
 		{
 			"purpose": "any maskable",
 			"sizes": "512x512",
-			"src": "/icon/512.png",
+			"src": "/images/icon-512.png",
 			"type": "image/png"
 		}
 	],
-	"name": "Web Boilerplate",
+	"name": "Jesse's World",
 	"orientation": "any",
 	"scope": "/",
 	"screenshots": [
@@ -40,7 +40,7 @@
 			"type": "image/png"
 		}
 	],
-	"short_name": "Boilerplate",
-	"start_url": "/?source=pwa",
-	"theme_color": "#bb86fc"
+	"short_name": "JW",
+	"start_url": "/",
+	"theme_color": "#000000"
 }

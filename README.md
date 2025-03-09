@@ -2,6 +2,15 @@
 
 Personal website with comprehensive automated testing suite.
 
+## System Requirements
+
+- **Linux Operating System**: This application is designed to run exclusively on Linux environments
+- **Node.js**: v16 or higher
+- **NPM**: v7 or higher
+- **Modern Web Browser**: Chrome, Firefox, or Safari for running and developing
+
+> **Note**: Windows and macOS are not officially supported. The application may work in WSL (Windows Subsystem for Linux) but is not tested in these environments.
+
 ## Mission
 
 To build a web site that is tested end-to-end in real browsers, authored in web standards, and supportive of assistive technologies. We embrace modern JavaScript and CSS features while rejecting compilation steps and unnecessary abstractions.

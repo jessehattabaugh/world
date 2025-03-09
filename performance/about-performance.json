@@ -1,18 +1,13 @@
 {
-  "timestamp": "2025-03-09T00:04:11.757Z",
+  "timestamp": "2025-03-09T01:00:53.852Z",
   "metrics": {
-    "TTFB": 427,
-    "DOMContentLoaded": 452,
-    "Load": 452,
-    "FCP": 504,
-    "memory": {
-      "jsHeapSizeLimit": 3760000000,
-      "totalJSHeapSize": 10000000,
-      "usedJSHeapSize": 10000000
-    },
+    "TTFB": 71,
+    "DOMContentLoaded": 288,
+    "Load": 298,
+    "FCP": 289,
     "CLS": 0,
-    "resourceCount": 0,
+    "resourceCount": 2,
     "scriptDuration": 0,
-    "LCP": 504
+    "LCP": 325
   }
 }

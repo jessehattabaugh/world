@@ -1,13 +1,13 @@
 {
-  "timestamp": "2025-03-09T00:06:11.947Z",
+  "timestamp": "2025-03-09T01:00:53.379Z",
   "metrics": {
-    "TTFB": 22,
-    "DOMContentLoaded": 1659,
-    "Load": 1777,
-    "FCP": 791,
+    "TTFB": 57,
+    "DOMContentLoaded": 371,
+    "Load": 374,
+    "FCP": 354,
     "CLS": 0,
     "resourceCount": 10,
     "scriptDuration": 0,
-    "LCP": 791
+    "LCP": 358
   }
 }

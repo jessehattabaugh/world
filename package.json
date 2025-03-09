@@ -4,15 +4,14 @@
 		"@eslint/eslintrc": "latest",
 		"@eslint/js": "latest",
 		"@lhci/cli": "latest",
-		"@playwright/test": "latest",
-		"cross-env": "latest",
+		"@playwright/test": "^1.51.0",
 		"eslint": "latest",
 		"globals": "latest",
 		"node-fetch": "latest",
 		"npm-run-all": "latest",
 		"rimraf": "latest",
 		"serve": "latest",
-		"xml2js": "latest"
+		"xml2js": "^0.6.2"
 	},
 	"scripts": {
 		"start": "npx serve ./www --listen 3000",
@@ -20,36 +19,32 @@
 		"lint": "eslint .",
 		"pretest": "node -e \"require('fs').mkdirSync('./snapshots', { recursive: true }); require('fs').mkdirSync('./performance', { recursive: true });\"",
 		"fix": "npm run lint -- --fix",
-
+		"update": "npm run shots",
 		"local": "playwright test",
-		"staging": "cross-env TEST_ENV=staging playwright test",
-		"prod": "cross-env TEST_ENV=production playwright test --project=chromium",
-		"url": "cross-env BASE_URL=${TEST_URL} playwright test",
-
+		"staging": "TEST_ENV=staging playwright test",
+		"prod": "TEST_ENV=production playwright test --project=chromium",
+		"url": "BASE_URL=${TEST_URL} playwright test",
 		"quick": "npm-run-all --serial clean lint local && npm run report",
-
 		"clean": "node bin/snapshots-clean.js",
 		"debug": "playwright test --debug",
 		"ui": "playwright test --ui",
-
 		"report": "playwright show-report",
-
 		"perf": "node bin/perf-update.js",
-		"updperf": "cross-env UPDATE_PERFORMANCE_BASELINE=true playwright test",
-
-		"shots": "cross-env BASE_URL=${BASE_URL:-http://localhost:3000} node bin/screenshots-generate.js",
+		"updperf": "UPDATE_PERFORMANCE_BASELINE=true playwright test",
+		"shots": "BASE_URL=${BASE_URL:-http://localhost:3000} node bin/screenshots-generate.js",
 		"updshots": "playwright test --update-snapshots",
-
 		"analyze": "lhci collect --url=http://localhost:3000 --output=html --outputPath=./lighthouse-report.html",
 		"audit": "lhci autorun --url=http://localhost:3000 --collect.staticDistDir=./www",
 		"codegen": "playwright codegen http://localhost:3000",
 		"run": "node bin/run-tests.js --ci=${CI:-false}",
-
 		"generate:page": "node bin/generate-page.js",
 		"generate:tests": "node bin/generate-test-scaffold.js",
 		"scaffold": "npm-run-all --serial generate:tests",
 		"new:page": "node bin/generate-page.js",
 		"dev": "serve ./www --listen 3000"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"@types/xml2js": "^0.4.14"
+	}
 }

@@ -3,9 +3,10 @@
 User-agent: *
 Allow: /
 
-# Block specific crawlers
-User-agent: GPTBot
-Disallow: /private/
-
 # Sitemaps
-Sitemap: https://example.com/sitemap.xml
+Sitemap: https://jessesworld.example.com/sitemap.xml
+
+# Common files to disallow
+Disallow: /cgi-bin/
+Disallow: /tmp/
+Disallow: /private/
