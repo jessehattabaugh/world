@@ -1,7 +1,8 @@
+import { checkA11y, injectAxe } from 'axe-playwright';
+
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
-import { injectAxe, checkA11y } from 'axe-playwright';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
@@ -19,7 +20,7 @@ if (!fs.existsSync(reportDir)) {
  * @param {Object} options Additional axe options
  * @returns {Array} Accessibility violations
  */
-export async function checkA11y(page, selector = 'body', options = {}) {
+export async function runA11yCheck(page, selector = 'body', options = {}) {
   const isDev = process.env.NODE_ENV === 'development' || !process.env.CI;
 
   try {
@@ -117,6 +118,6 @@ export async function checkA11y(page, selector = 'body', options = {}) {
 
 export async function runAccessibilityTests(page) {
   await injectAxe(page);
-  const results = await checkA11y(page);
+  const results = await runA11yCheck(page);
   return results;
 }
