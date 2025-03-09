@@ -1,6 +1,5 @@
 import { expect, test } from '../utils/test-utils.js';
-
-import { BasePage } from './page-model.js';
+import { visualCheck } from '../utils/visual-utils.js';
 
 /**
  * Create a complete test suite for a page
@@ -13,7 +12,7 @@ export function createPageTest(PageClass) {
     // Create a new page instance for each test
     test.beforeEach(async ({ page: testPage }) => {
       // Set up URL route handling for jessesworld.example.com domains
-      await testPage.route(/https:\/\/jessesworld\.example\.com.*/, route => {
+      await testPage.route(/https:\/\/jessesworld\.example\.com.*/, (route) => {
         const url = new URL(route.request().url());
         url.host = 'localhost:3000';
         url.protocol = 'http:';
@@ -62,11 +61,13 @@ export function createPageTest(PageClass) {
       await testPage.keyboard.press('Tab');
 
       // Check that focus moved from body to an interactive element
-      const focusedElement = await testPage.evaluate(() => {return {
-        tag: document.activeElement.tagName,
-        role: document.activeElement.getAttribute('role'),
-        tabIndex: document.activeElement.tabIndex,
-      }});
+      const focusedElement = await testPage.evaluate(() => {
+        return {
+          tag: document.activeElement.tagName,
+          role: document.activeElement.getAttribute('role'),
+          tabIndex: document.activeElement.tabIndex,
+        };
+      });
 
       expect(focusedElement.tag).not.toBe('BODY', 'Focus should move from body');
 
@@ -89,10 +90,10 @@ export function createPageTest(PageClass) {
       await page.goto();
 
       // Check dark mode applied
-      const hasDarkMode = await testPage.evaluate(() =>
-        {return document.documentElement.classList.contains('dark-mode') ||
-        document.documentElement.dataset.theme === 'dark'}
-      );
+      const hasDarkMode = await testPage.evaluate(() => {
+        return document.documentElement.classList.contains('dark-mode') ||
+        document.documentElement.dataset.theme === 'dark';
+      });
       expect(hasDarkMode).toBeTruthy('Dark mode should be applied');
 
       // Take screenshot in dark mode

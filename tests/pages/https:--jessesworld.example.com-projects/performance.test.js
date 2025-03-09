@@ -5,8 +5,6 @@ import { test, expect } from '@playwright/test';
 import { getBrowserPerformanceMetrics, assertPerformanceBaseline } from '../../utils/performance-utils.js';
 
 const pageUrl = 'https://jessesworld.example.com/projects';
-const pageName = 'Projects';
-const pageId = 'https:--jessesworld.example.com-projects';
 
 test.describe('Projects - Performance', () => {
   test('meets performance baseline requirements', async ({ page }) => {
@@ -16,7 +14,7 @@ test.describe('Projects - Performance', () => {
     const metrics = await getBrowserPerformanceMetrics(page);
 
     // Compare against baseline
-    await assertPerformanceBaseline(pageId, metrics);
+    await assertPerformanceBaseline('https:--jessesworld.example.com-projects', metrics);
 
     // Assert specific thresholds for critical metrics
     expect(metrics.FCP).toBeLessThan(2000, 'FCP should be under 2 seconds');

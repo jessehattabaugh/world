@@ -46,5 +46,8 @@
 		"update": "npm run shots && npm run accept-all",
 		"url": "BASE_URL=${TEST_URL} playwright test"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"axe-playwright": "^2.1.0"
+	}
 }

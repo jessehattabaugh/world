@@ -9,10 +9,39 @@ import path from 'path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
 const snapshotsDir = path.join(rootDir, 'snapshots');
+const baselineDir = path.join(process.cwd(), 'snapshots', 'baselines');
 
-// Ensure snapshots directory exists
+// Ensure snapshots and baseline directories exist
 if (!fs.existsSync(snapshotsDir)) {
   fs.mkdirSync(snapshotsDir, { recursive: true });
+}
+
+if (!fs.existsSync(baselineDir)) {
+  fs.mkdirSync(baselineDir, { recursive: true });
+}
+
+/**
+ * Assert visual baseline
+ * @param {import('@playwright/test').Page} page
+ * @param {string} testName
+ */
+export async function assertVisualBaseline(page, testName) {
+  const baselineFile = path.join(baselineDir, `${testName}.png`);
+
+  if (!fs.existsSync(baselineFile)) {
+    // Create baseline if it doesn't exist
+    await page.screenshot({ path: baselineFile });
+    console.log(`Created new visual baseline for ${testName}`);
+    return;
+  }
+
+  // Compare screenshot with baseline
+  await expect(page).toHaveScreenshot(baselineFile, {
+    animations: 'disabled',
+    fullPage: true,
+  });
+
+  console.log(`Visual baseline for ${testName} is within acceptable limits`);
 }
 
 /**
@@ -23,67 +52,13 @@ if (!fs.existsSync(snapshotsDir)) {
 export async function runVisualTests(page, pageId) {
   console.log(`📸 Running visual tests for ${pageId}...`);
 
-  // Original viewport size (save for restoring later)
-  const originalViewport = await page.viewportSize();
-
   try {
-    // Desktop screenshot
-    await page.setViewportSize({ width: 1280, height: 720 });
-
-    // Wait for any animations to complete
-    await page.waitForTimeout(500);
-
-    // Take screenshot and save it
-    const desktopPath = path.join(snapshotsDir, `${pageId}-desktop.png`);
-    await page.screenshot({
-      path: desktopPath,
-      fullPage: true
-    });
-
-    // Create baseline if it doesn't exist
-    const desktopBaselinePath = path.join(snapshotsDir, `${pageId}-desktop-baseline.png`);
-    if (!fs.existsSync(desktopBaselinePath)) {
-      console.log(`Creating baseline desktop screenshot: ${desktopBaselinePath}`);
-      fs.copyFileSync(desktopPath, desktopBaselinePath);
-    }
-
-    console.log(`✅ Saved desktop screenshot to ${desktopPath}`);
-
-    // Mobile screenshot
-    await page.setViewportSize({ width: 375, height: 667 });
-
-    // Wait for any mobile-specific layouts to render
-    await page.waitForTimeout(500);
-
-    // Take screenshot and save it
-    const mobilePath = path.join(snapshotsDir, `${pageId}-mobile.png`);
-    await page.screenshot({
-      path: mobilePath,
-      fullPage: true
-    });
-
-    // Create baseline if it doesn't exist
-    const mobileBaselinePath = path.join(snapshotsDir, `${pageId}-mobile-baseline.png`);
-    if (!fs.existsSync(mobileBaselinePath)) {
-      console.log(`Creating baseline mobile screenshot: ${mobileBaselinePath}`);
-      fs.copyFileSync(mobilePath, mobileBaselinePath);
-    }
-
-    console.log(`✅ Saved mobile screenshot to ${mobilePath}`);
-
+    await assertVisualBaseline(page, pageId);
+    console.log(`Visual tests for ${pageId} passed`);
   } catch (error) {
-    console.error('Error during visual tests:', error);
-  } finally {
-    // Restore original viewport
-    if (originalViewport) {
-      await page.setViewportSize(originalViewport);
-    }
+    console.error(`Visual tests for ${pageId} failed:`, error);
+    throw error;
   }
-
-  return {
-    desktopImage: `${pageId}-desktop.png`,
-    mobileImage: `${pageId}-mobile.png`
-  };
 }
 
 /**
@@ -142,4 +117,14 @@ export async function safeVisualComparison(page, name, options = {}) {
 
     throw error;
   }
+}
+
+/**
+ * Visual check function
+ * @param {Page} page Playwright page
+ * @param {string} name Screenshot name
+ * @param {object} options Screenshot options
+ */
+export async function visualCheck(page, name, options = {}) {
+  await safeVisualComparison(page, name, options);
 }

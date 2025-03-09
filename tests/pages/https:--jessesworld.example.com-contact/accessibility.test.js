@@ -5,8 +5,6 @@ import { test, expect } from '@playwright/test';
 import { checkA11y, injectAxe } from '../../utils/accessibility-utils.js';
 
 const pageUrl = 'https://jessesworld.example.com/contact';
-const pageName = 'Contact';
-const pageId = 'https:--jessesworld.example.com-contact';
 
 test.describe('Contact - Accessibility', () => {
   test('meets accessibility standards', async ({ page }) => {

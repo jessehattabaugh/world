@@ -34,12 +34,12 @@ test.describe('Homepage - Performance', () => {
     await assertPerformanceBaseline(pageId, metrics);
 
     // Assert specific thresholds for critical metrics
-    expect(metrics.FCP).toBeLessThan(3000, 'FCP should be under 3 seconds');
+    expect(metrics.FCP).toBeLessThan(2000, 'FCP should be under 2 seconds');
     if (metrics.LCP !== undefined) {
-      expect(metrics.LCP).toBeLessThan(4000, 'LCP should be under 4 seconds');
+      expect(metrics.LCP).toBeLessThan(2500, 'LCP should be under 2.5 seconds');
     }
     if (metrics.CLS !== undefined) {
-      expect(metrics.CLS).toBeLessThan(0.25, 'CLS should be under 0.25');
+      expect(metrics.CLS).toBeLessThan(0.1, 'CLS should be under 0.1');
     }
   });
 });

@@ -1,9 +1,7 @@
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-/**
- * Accessibility testing utilities
- */
 import path from 'path';
+import { injectAxe, checkA11y } from 'axe-playwright';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
@@ -12,23 +10,6 @@ const reportDir = path.join(rootDir, 'reports', 'accessibility');
 // Ensure reports directory exists
 if (!fs.existsSync(reportDir)) {
   fs.mkdirSync(reportDir, { recursive: true });
-}
-
-/**
- * Inject axe-core library into the page
- * @param {import('@playwright/test').Page} page
- */
-export async function injectAxe(page) {
-  // Only inject if not already present
-  const axePresent = await page.evaluate(() =>
-    typeof window.axe !== 'undefined'
-  );
-
-  if (!axePresent) {
-    await page.addScriptTag({
-      path: require.resolve('axe-core/axe.min.js')
-    });
-  }
 }
 
 /**
@@ -45,7 +26,7 @@ export async function checkA11y(page, selector = 'body', options = {}) {
     // Run axe analysis
     const violations = await page.evaluate(
       ([selector, options]) => {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           if (typeof window.axe === 'undefined') {
             console.warn('axe-core not loaded');
             resolve([]);
@@ -104,7 +85,7 @@ export async function checkA11y(page, selector = 'body', options = {}) {
     // Log results
     if (violations.length > 0) {
       console.warn(`⚠️ ${violations.length} accessibility violations found on ${url}:`);
-      violations.forEach(violation => {
+      violations.forEach((violation) => {
         console.warn(`  - ${violation.id} (${violation.impact}): ${violation.help}`);
         console.warn(`    ${violation.helpUrl}`);
         console.warn(`    Affects ${violation.nodes.length} element(s)`);
@@ -134,30 +115,8 @@ export async function checkA11y(page, selector = 'body', options = {}) {
   }
 }
 
-/**
- * Run a full accessibility test suite on a page
- * @param {import('@playwright/test').Page} page
- * @param {String} pageId Page identifier for reporting
- */
-export async function runAccessibilityTests(page, pageId) {
-  console.log(`♿ Running accessibility tests for ${pageId}...`);
-
-  try {
-    // Inject axe-core
-    await injectAxe(page);
-
-    // Run accessibility tests
-    const violations = await checkA11y(page);
-
-    // Return results
-    return {
-      violations,
-      reportFile: path.join(reportDir, `${pageId}-a11y.json`),
-      pass: violations.length === 0
-    };
-
-  } catch (error) {
-    console.error('Error running accessibility tests:', error);
-    return { error: error.message };
-  }
+export async function runAccessibilityTests(page) {
+  await injectAxe(page);
+  const results = await checkA11y(page);
+  return results;
 }

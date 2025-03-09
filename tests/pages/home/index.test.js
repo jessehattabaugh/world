@@ -1,5 +1,4 @@
 import { expect, test } from '../../utils/test-utils.js';
-
 import { HomePage } from './home-page.js';
 import { createPageTest } from '../../fixtures/page-fixtures.js';
 
@@ -7,12 +6,51 @@ import { createPageTest } from '../../fixtures/page-fixtures.js';
 createPageTest(HomePage);
 
 // Additional page-specific tests
+
+// Helper function to handle tabbing and focus checks
+async function tabAndCheckFocus(page, maxTabs = 10) {
+  const focusableElements = [];
+
+  for (let i = 0; i < maxTabs; i++) {
+    await page.keyboard.press('Tab');
+
+    const isFocused = await page.evaluate(() => {
+      return document.activeElement !== document.body;
+    });
+
+    if (isFocused) {
+      focusableElements.push(i);
+
+      // Take screenshot with focused element
+      await page.screenshot({
+        path: `screenshots/keyboard-focus-${i}.png`,
+        animations: 'disabled'
+      });
+
+      // Check if element can be activated
+      const canBeActivated = await page.evaluate(() => {
+        const el = document.activeElement;
+        return el.tagName === 'A' ||
+               el.tagName === 'BUTTON' ||
+               el.getAttribute('role') === 'button';
+      });
+
+      if (canBeActivated && i === 2) { // Activate the third focusable element
+        await page.keyboard.press('Enter');
+        break;
+      }
+    }
+  }
+
+  return focusableElements;
+}
+
 test.describe('Homepage user interactions', () => {
   let homePage;
 
   test.beforeEach(async ({ page }) => {
     // Set up URL route handling for jessesworld.example.com domains
-    await page.route(/https:\/\/jessesworld\.example\.com.*/, route => {
+    await page.route(/https:\/\/jessesworld\.example\.com.*/, (route) => {
       const url = new URL(route.request().url());
       url.host = 'localhost:3000';
       url.protocol = 'http:';
@@ -54,7 +92,7 @@ test.describe('Homepage user interactions', () => {
     // Verify audio element is playing
     const isPlaying = await page.evaluate(() => {
       const audioElements = Array.from(document.querySelectorAll('audio'));
-      return audioElements.some(audio => {return !audio.paused});
+      return audioElements.some((audio) => { return !audio.paused; });
     });
     expect(isPlaying).toBeTruthy('Audio should be playing');
   });
@@ -78,23 +116,24 @@ test.describe('Homepage user interactions', () => {
     expect(images.length).toBeGreaterThan(0, 'Page should have lazy-loaded images');
 
     // Scroll to bottom to trigger lazy loading
-    await homePage.page.evaluate(() => {return window.scrollTo(0, document.body.scrollHeight)});
+    await homePage.page.evaluate(() => { return window.scrollTo(0, document.body.scrollHeight); });
 
     // Wait for lazy images to load
     await homePage.page.waitForTimeout(1000);
 
     // Check that images loaded after scrolling
     const loadedImages = await homePage.checkLazyLoadedImages();
-    const allLoaded = loadedImages.every(img => {return img.loaded});
+    const allLoaded = loadedImages.every((img) => { return img.loaded; });
     expect(allLoaded).toBeTruthy('All images should load after scrolling into view');
   });
 });
 
 // Complete user journey tests
+
 test.describe('User journeys', () => {
   test.beforeEach(async ({ page }) => {
     // Set up URL route handling for jessesworld.example.com domains
-    await page.route(/https:\/\/jessesworld\.example\.com.*/, route => {
+    await page.route(/https:\/\/jessesworld\.example\.com.*/, (route) => {
       const url = new URL(route.request().url());
       url.host = 'localhost:3000';
       url.protocol = 'http:';
@@ -133,40 +172,8 @@ test.describe('User journeys', () => {
     await homePage.goto();
 
     // Press Tab repeatedly to navigate through all interactive elements
-    let focusableElements = 0;
-    const maxTabs = 10; // Safety limit
+    const focusableElements = await tabAndCheckFocus(page);
 
-    for (let i = 0; i < maxTabs; i++) {
-      await page.keyboard.press('Tab');
-
-      const isFocused = await page.evaluate(() =>
-        {return document.activeElement !== document.body}
-      );
-
-      if (isFocused) {
-        focusableElements++;
-
-        // Take screenshot with focused element
-        await page.screenshot({
-          path: `screenshots/keyboard-focus-${i}.png`,
-          animations: 'disabled'
-        });
-
-        // Check if element can be activated
-        const canBeActivated = await page.evaluate(() => {
-          const el = document.activeElement;
-          return el.tagName === 'A' ||
-                 el.tagName === 'BUTTON' ||
-                 el.getAttribute('role') === 'button';
-        });
-
-        if (canBeActivated && i === 2) { // Activate the third focusable element
-          await page.keyboard.press('Enter');
-          break;
-        }
-      }
-    }
-
-    expect(focusableElements).toBeGreaterThan(1, 'Page should have multiple focusable elements');
+    expect(focusableElements.length).toBeGreaterThan(1, 'Page should have multiple focusable elements');
   });
 });

@@ -1,8 +1,5 @@
+import { test, expect } from '@playwright/test';
 import { checkA11y, injectAxe } from '../../utils/accessibility-utils.js';
-/**
- * Homepage accessibility tests
- */
-import { expect, test } from '@playwright/test';
 import { formatPageId, mapTestUrl } from '../../utils/url-mapping.js';
 
 // Keep original URL as reference for reports, but use the mapped URL for testing
@@ -30,26 +27,23 @@ test.describe('Homepage - Accessibility', () => {
     // Inject axe-core library
     await injectAxe(page);
 
-    // Run accessibility tests
+    // Run axe accessibility tests
     const violations = await checkA11y(page);
-    expect(violations.length, 'No accessibility violations').toBe(0);
+    expect(violations.length, 'No accessibility violations should be detected').toBe(0);
   });
 
   test('has proper keyboard navigation', async ({ page }) => {
     await page.goto(pageUrl, { waitUntil: 'networkidle' });
 
-    // Press Tab to move focus to first interactive element
+    // Tab through interactive elements
     await page.keyboard.press('Tab');
 
-    // Check that focus moved from body to an interactive element
+    // Verify focus is visible
     const focusedElement = await page.evaluate(() => {
-      return {
-        tag: document.activeElement.tagName,
-        role: document.activeElement.getAttribute('role'),
-        tabIndex: document.activeElement.tabIndex,
-      };
+      const el = document.activeElement;
+      return el?.tagName !== 'BODY';
     });
 
-    expect(focusedElement.tag).not.toBe('BODY', 'Focus should move from body');
+    expect(focusedElement, 'An element should be focused after pressing Tab').toBeTruthy();
   });
 });
