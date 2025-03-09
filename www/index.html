@@ -20,12 +20,18 @@
 	<link rel="manifest" href="/manifest.json">
 	<link rel="icon" href="/favicon.ico">
 
+	<!-- Preloading critical assets -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
 	<!-- Stylesheets -->
 	<link rel="stylesheet" href="/styles/all.css">
 	<link rel="stylesheet" media="screen and (prefers-color-scheme: light)" href="/styles/light.css">
 	<link rel="stylesheet" media="screen and (min-width: 30em)" href="/styles/wide.css">
 	<link rel="stylesheet" href="/styles/index.css">
 	<link rel="stylesheet" href="/styles/modern.css">
+	<link rel="stylesheet" href="/styles/cyberpunk.css">
+	<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
 
 	<!-- JavaScript that can start now -->
 	<script type="module" async src="/scripts/async.js"></script>
@@ -35,7 +41,7 @@
 	<script type="module" defer src="/scripts/effects.js"></script>
 </head>
 
-<body class="modern-theme">
+<body class="cyberpunk-theme">
 	<!-- Skip to content link for accessibility -->
 	<a href="#main-content" class="skip-link">Skip to content</a>
 
@@ -124,6 +130,23 @@
 
 	<!-- Audio feedback element (hidden) -->
 	<div id="audio-feedback" aria-hidden="true"></div>
+
+	<!-- Audio Player Controls -->
+	<div class="music-controls">
+		<button id="music-toggle" class="music-toggle" aria-label="Toggle music">
+			<i>▶</i>
+		</button>
+		<div id="music-visualizer" class="visualizer-container"></div>
+		<button id="new-pattern" class="music-toggle" aria-label="Generate new pattern">
+			<i>🎲</i>
+		</button>
+	</div>
+
+	<!-- Import music generator -->
+	<script type="module">
+		import { initMusicControls } from '/scripts/synth.js';
+		document.addEventListener('DOMContentLoaded', initMusicControls);
+	</script>
 
 	<!-- Test Page Content -->
 	<h1>Test Page</h1>

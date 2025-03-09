@@ -41,7 +41,8 @@
 		"generate:tests": "node bin/generate-test-scaffold.js",
 		"scaffold": "npm-run-all --serial generate:tests",
 		"new:page": "node bin/generate-page.js",
-		"dev": "serve ./www --listen 3000"
+		"dev": "serve ./www --listen 3000",
+		"build": "echo \"No build step - deploying raw source files directly\""
 	},
 	"type": "module",
 	"dependencies": {

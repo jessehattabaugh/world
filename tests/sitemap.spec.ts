@@ -29,7 +29,7 @@ async function runAccessibilityTests(page: Page) {
   await test.step('accessibility', async () => {
     const snapshot = await page.accessibility.snapshot();
     expect(snapshot).toBeTruthy();
-    
+
     // Check for ARIA landmarks
     const landmarks = await page.locator('[role="main"], [role="navigation"], [role="banner"]').count();
     expect(landmarks).toBeGreaterThan(0);
@@ -45,9 +45,9 @@ async function runPerformanceTests(page: Page) {
         loadTime: navigation ? navigation.duration : performance.now(),
       };
     });
-    
+
     expect(performanceTimings.loadTime).toBeLessThan(5000);
-    
+
     // Check for optimized images
     const images = await page.locator('img').all();
     for (const img of images) {
@@ -63,7 +63,7 @@ async function runPerformanceTests(page: Page) {
 async function runSecurityTests(page: Page) {
   await test.step('security', async () => {
     const response = await page.request.get(page.url());
-    
+
     // Check security headers
     const headers = response.headers();
     // Make these tests conditional to avoid failures if headers aren't present
@@ -105,7 +105,7 @@ test.describe('Sitemap URL Tests', () => {
           await page.goto(url, { waitUntil: 'networkidle' });
           await expect(page).toHaveTitle(/.+/);
         });
-        
+
         // Run common test suites
         await runAccessibilityTests(page);
         await runPerformanceTests(page);
