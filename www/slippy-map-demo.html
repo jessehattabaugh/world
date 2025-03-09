@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slippy Map with Web Workers & OffscreenCanvas Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #0a1e12;
+            color: #e0f5e3;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: #194b2e;
+            color: #7fe084;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .map-container {
+            flex: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            background-color: #050f09;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            min-height: 500px;
+        }
+
+        #map-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .controls {
+            width: 250px;
+            background-color: #153924;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-section h3 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            color: #7fe084;
+            font-size: 1rem;
+            border-bottom: 1px solid rgba(127, 224, 132, 0.3);
+            padding-bottom: 0.5rem;
+        }
+
+        button {
+            background-color: #2c7d4e;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #3a9063;
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        #stats-display {
+            background-color: rgba(10, 30, 18, 0.7);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .tile-key {
+            display: flex;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .tile-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 0.5rem;
+        }
+
+        .tile-status.visible {
+            background-color: rgba(127, 224, 132, 0.8);
+        }
+
+        .tile-status.loaded {
+            background-color: rgba(127, 224, 132, 0.3);
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: #121212;
+            font-size: 0.8rem;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.85rem;
+        }
+
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(10, 15, 10, 0.7);
+            padding: 0.5rem 1rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            z-index: 5;
+        }
+
+        #status-message {
+            margin: 0;
+        }
+
+        #status-message.error {
+            color: #ff6b6b;
+        }
+
+        #status-message.success {
+            color: #7fe084;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .controls {
+                width: auto;
+            }
+
+            .map-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌍 Slippy Map with Web Workers & OffscreenCanvas</h1>
+    </header>
+
+    <div class="container">
+        <div class="map-container">
+            <canvas id="map-canvas" data-auto-init="true" data-world-width="4096" data-world-height="4096" data-tile-size="256"></canvas>
+            <div class="status-bar">
+                <p id="status-message">Initializing...</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-section">
+                <h3>Navigation</h3>
+                <p>
+                    <button id="reset-view">Reset View</button>
+                </p>
+                <p><small>Drag to pan, scroll to zoom</small></p>
+            </div>
+
+            <div class="control-section">
+                <h3>Entities</h3>
+                <p>
+                    <button id="spawn-entity">Spawn 10 Random Entities</button>
+                </p>
+                <p>
+                    <button id="clear-entities">Clear All Entities</button>
+                </p>
+            </div>
+
+            <div class="control-section">
+                <h3>Statistics</h3>
+                <div id="stats-display">
+                    <div>FPS: --</div>
+                    <div>Frame Time: --ms</div>
+                    <div>Visible Tiles: --</div>
+                    <div>Loaded Tiles: --</div>
+                </div>
+
+                <div class="tile-key">
+                    <div class="tile-status visible"></div>
+                    <div>Visible</div>
+                    <div style="width: 20px"></div>
+                    <div class="tile-status loaded"></div>
+                    <div>Loaded (Buffer)</div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>About</h3>
+                <p>This demo shows a slippy map implementation using:</p>
+                <ul>
+                    <li>Web Workers for parallel processing</li>
+                    <li>OffscreenCanvas for independent rendering</li>
+                    <li>Dynamic tile loading based on viewport</li>
+                    <li>Comlink for simple worker communication</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Jesse's World - WebGPU Ecosystem Simulator | Slippy Map Implementation</p>
+    </footer>
+
+    <!-- Load Comlink from CDN -->
+    <script src="https://unpkg.com/comlink/dist/umd/comlink.js"></script>
+
+    <!-- Load our demo script -->
+    <script type="module" src="/scripts/slippy-map-demo.js"></script>
+
+    <script type="module">
+        // Additional script for UI handling
+        document.addEventListener('DOMContentLoaded', () => {
+            // Connect clear entities button
+            const clearButton = document.getElementById('clear-entities');
+            if (clearButton) {
+                clearButton.addEventListener('click', () => {
+                    if (window.slippyMapDemo) {
+                        window.slippyMapDemo.tileManager.reset();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

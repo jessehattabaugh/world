@@ -241,6 +241,117 @@ For detailed information about the testing strategy and implementation:
 - [Performance Documentation](./performance/README.md)
 - [WebGPU Shaders Documentation](./www/scripts/shaders/README.md)
 
+## Slippy Map-Style Grid System
+
+Our system divides the simulation world into chunks rather than traditional map tiles.
+These chunks are configured by the "chunkSize" option in the manager and are processed in parallel by Web Workers.
+This design (inspired by techniques seen in multiplayer games like Minecraft) lets us efficiently use available CPU cores and the GPU, while providing pan and zoom capabilities similar to slippy map libraries.
+
+### Key Components
+
+#### TileManager (`www/scripts/engine/tile-manager.js`)
+- Manages the overall grid system, viewport, and tile lifecycle
+- Handles dynamic loading/unloading of tiles as the user pans and zooms
+- Distributes work to Web Workers for parallel processing
+- Uses Comlink for streamlined worker communication
+- Efficiently composites rendered tile bitmaps onto the main canvas
+
+#### TileWorker (`www/scripts/engine/workers/tile-worker.js`)
+- Handles simulation and rendering for individual tiles
+- Processes entities within each tile independently
+- Uses OffscreenCanvas for GPU-accelerated rendering
+- Manages entity interactions within the tile boundaries
+- Communicates with the main thread via Comlink
+
+#### Demo Implementation (`www/scripts/slippy-map-demo.js`)
+- Provides a complete working example of the slippy map system
+- Implements pan and zoom controls for intuitive navigation
+- Shows performance metrics and tile status
+- Demonstrates entity spawning and management
+
+### Usage Example
+
+```javascript
+// Create and initialize the TileManager
+const tileManager = new TileManager({
+  width: 4096,          // Total world width
+  height: 4096,         // Total world height
+  tileSize: 256,        // Size of each tile
+  maxWorkers: 4,        // Number of Web Workers to use
+  bufferZone: 1,        // Extra tiles to keep loaded beyond visible area
+  viewport: {
+    x: 0, y: 0,         // Viewport position
+    width: 800,         // Viewport width
+    height: 600,        // Viewport height
+    zoom: 1             // Zoom level
+  },
+  ctx: mainCanvasContext // Main canvas for compositing
+});
+
+// Initialize and start the system
+await tileManager.initialize();
+tileManager.start();
+
+// Pan the viewport
+tileManager.panViewport(deltaX, deltaY);
+
+// Zoom the viewport around a point
+tileManager.zoomViewport(1.1, centerX, centerY);
+
+// Spawn an entity in the world
+tileManager.spawnEntity({
+  type: 'lifeform',
+  position: { x: 100, y: 100 },
+  species: 0, // 0: plant, 1: herbivore, 2: carnivore
+  energy: 100,
+  size: 5
+});
+
+// Clean up resources
+tileManager.dispose();
+```
+
+### Key Benefits
+
+1. **Performance Optimization**
+   - Processing is distributed across multiple CPU cores via Web Workers
+   - Only tiles in or near the viewport are loaded and processed
+   - Rendering happens independently on each tile's OffscreenCanvas
+
+2. **Memory Efficiency**
+   - Entities are only loaded in active tiles
+   - Resources for off-screen tiles are automatically released
+   - Buffer zone prevents constant loading/unloading during small movements
+
+3. **Scalability**
+   - Can support very large world sizes (theoretically unlimited)
+   - Entity count can scale to millions by only processing visible areas
+   - Worker count automatically adjusts to available CPU cores
+
+### Implementation Details
+
+The system follows these principles:
+
+1. **Viewport Management**
+   - The visible area is represented by a viewport rectangle
+   - Tiles overlapping this viewport are marked as visible
+   - A buffer zone around the viewport contains additional loaded tiles
+
+2. **Tile Lifecycle**
+   - Tiles can be in states: unloaded, loading, loaded, processing, error
+   - Tiles are dynamically assigned to the least busy worker
+   - Each tile gets its own OffscreenCanvas for independent rendering
+
+3. **Worker Communication**
+   - Comlink provides a clean RPC-like interface to workers
+   - Transferable objects (like OffscreenCanvas) minimize copying
+   - Workers only process entities contained within their assigned tiles
+
+4. **Entity Management**
+   - Entities are assigned to tiles based on their positions
+   - When entities move across tile boundaries, ownership transfers
+   - Each worker maintains its own entity rendering
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

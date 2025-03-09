@@ -6,24 +6,25 @@
   "scripts": {
     "start": "npx serve ./www --listen 3000",
     "dev": "serve ./www --listen 3000",
-    "test": "playwright test",
-    "test:all": "npm-run-all --serial clean lint test:unit test:e2e test:visual test:perf",
-    "test:unit": "playwright test tests/unit/",
-    "test:e2e": "playwright test tests/ecosystem/",
-    "test:visual": "npm-run-all --serial shots compare-shots",
-    "test:perf": "playwright test tests/performance/",
-    "test:stress": "cross-env STRESS_TEST=true playwright test tests/stress/",
-    "test:memory": "node bin/memory-test.js",
-    "test:ui": "playwright test --ui",
-    "test:debug": "playwright test --debug",
+	"test": "npm-run-all --serial clean lint test:unit test:e2e test:visual test:perf",
+	"fix": "npm lint -- --fix",
 
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "test:pw": "playwright test",
+    "test:unit": "npm run test:pw -- tests/unit/",
+    "test:e2e": "npm run test:pw -- tests/ecosystem/",
+    "test:visual": "npm-run-all --serial shots compare-shots",
+    "test:perf": "npm run test:pw -- tests/performance/",
+    "test:stress": "cross-env STRESS_TEST=true npm run test:pw -- tests/stress/",
+    "test:memory": "node bin/memory-test.js",
+    "test:ui": "npm run test:pw -- --ui",
+    "test:debug": "npm run test:pw -- --debug",
+
+	"lint": "eslint .",
 
     "profile": "npm-run-all --serial profile:*",
     "profile:cpu": "node --prof bin/run-tests.js && node --prof-process isolate-*-v8.log > cpu-profile.txt",
     "profile:heap": "node --expose-gc --trace-gc bin/run-tests.js > gc-trace.txt",
-    "profile:gpu": "playwright test tests/ecosystem/performance.test.js --trace=webgpu",
+    "profile:gpu": "npm run test:pw -- tests/ecosystem/performance.test.js --trace=webgpu",
     "profile:dev": "cross-env PROFILE=true npm run dev",
     "profile:start": "cross-env PROFILE=true npm run start",
 
@@ -49,10 +50,8 @@
     "new:page": "node bin/generate-page.js",
     "report": "playwright show-report"
   },
-  "dependencies": {
-    "commander": "^9.0.0"
-  },
   "devDependencies": {
+	"commander": "latest",
     "@eslint/compat": "latest",
     "@eslint/eslintrc": "latest",
     "@eslint/js": "latest",
@@ -72,8 +71,5 @@
     "microtime": "latest",
     "v8-profiler-next": "latest"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "type": "module"
 }

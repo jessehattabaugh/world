@@ -127,12 +127,12 @@ export class EcosystemSimulator {
     }
 
     this.tileManager = new TileManager({
-      worldWidth: this.options.width,
-      worldHeight: this.options.height,
-      tileSize: this.options.tileSize,
-      maxEntitiesPerTile: this.options.maxEntitiesPerTile,
-      gpuManager: this.gpuManager
-    });
+		worldWidth: this.options.width,
+		worldHeight: this.options.height,
+		chunkSize: this.options.tileSize,
+		maxEntitiesPerTile: this.options.maxEntitiesPerTile,
+		gpuManager: this.gpuManager,
+	});
 
     this.features.webWorker = await this.tileManager.initialize();
   }
