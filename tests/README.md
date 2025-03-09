@@ -97,6 +97,33 @@ Performance testing is fully integrated into the testing framework rather than b
 - `npm run perf` - Update performance baselines for all pages in sitemap
 - `npm run updperf` - Update performance baselines during test runs (uses current metrics as new baseline)
 - `npm run analyze` - Generate Lighthouse reports for performance analysis
+- `npm run accept-perf` - Accept the most recent performance test results as the new baseline
+
+### Performance Baseline Management Philosophy
+
+Our approach to performance testing follows these principles:
+
+1. **Performance should never degrade:** By default, we track baselines to ensure performance is maintained or improved
+2. **Baseline flexibility when needed:** We acknowledge that adding features sometimes impacts performance metrics
+3. **Intentional acceptance:** Performance regressions should only be accepted when necessary and justified
+4. **Documentation:** When accepting new baselines, document the reason for the change
+
+#### When to Accept Performance Regressions
+
+Only accept performance regressions when:
+
+- A new required feature unavoidably impacts performance
+- The performance impact is understood and minimized
+- The team agrees the tradeoff is worthwhile
+- The regression has been documented
+
+To accept a new performance baseline:
+
+```bash
+npm run accept-perf
+```
+
+This will set the most recent test run's performance metrics as the new baseline. Always include a commit message explaining why the regression was accepted.
 
 ## Visual Testing
 
@@ -106,6 +133,54 @@ Visual tests automatically capture screenshots at different viewport sizes and c
 
 - `npm run shots` - Generate screenshots for all pages
 - `npm run updshots` - Update visual baselines (when UI intentionally changes)
+
+## Visual and Performance Baseline Management
+
+Our testing framework tracks both visual appearance and performance metrics using baselines that are checked into git. We maintain a consistent workflow for accepting changes to either type of baseline.
+
+### Baseline Management Scripts
+
+```bash
+# Accept new performance baselines
+npm run accept-perf
+
+# Accept new visual snapshots
+npm run accept-shots   # (alias for updshots)
+
+# Accept both performance and visual baseline changes at once
+npm run accept-all
+```
+
+### Baseline Comparison Scripts
+
+```bash
+# Compare current performance against baselines and generate delta reports
+npm run compare-perf
+
+# Generate visual diff images showing pixel changes from baseline
+npm run compare-shots
+
+# Run both comparison scripts in parallel
+npm run compare-all
+
+# Generate a comprehensive diff report with both performance and visual changes
+npm run diff-report
+```
+
+The comparison scripts generate temporary files (using the *.tmp.* pattern) that show exactly what has changed:
+
+- **Visual diffs**: Located in `/snapshots/diffs/*.tmp.diff.png` - Red pixels show removed content, green shows added content
+- **Performance deltas**: Located in `/performance/deltas/*.tmp.delta.json` - Shows metrics increases/decreases with percentage changes
+
+These temporary comparison files are excluded from git via the `.gitignore` file.
+
+### When to Accept New Baselines
+
+- **Performance Baselines:** When feature additions unavoidably impact performance metrics
+- **Visual Baselines:** When intentional UI changes affect the appearance of components
+- **Both Together:** When significant changes affect both appearance and performance
+
+After accepting new baselines, always include a detailed commit message explaining the changes and their justification.
 
 ## Accessibility Testing
 
@@ -156,7 +231,7 @@ CI=true npm test
 Check if the UI was intentionally changed. If so, update baselines:
 
 ```bash
-npm run updshots
+npm run accept-shots
 ```
 
 ### Performance Tests Failing
@@ -164,7 +239,15 @@ npm run updshots
 Verify if the performance regression is expected. If the changes are intentional, update the baseline:
 
 ```bash
-npm run updperf
+npm run accept-perf
+```
+
+### Both Visual and Performance Tests Failing
+
+If you've made changes that affect both appearance and performance:
+
+```bash
+npm run accept-all
 ```
 
 ### Debugging Tests

@@ -51,6 +51,105 @@ For main pages, full Lighthouse audits are performed and tracked:
 
 ## Managing Performance Baselines
 
+### Performance Testing Philosophy
+
+Our performance testing strategy is built on these key principles:
+
+1. **Performance Matters:** We treat performance as a critical feature, not an afterthought
+2. **Prevent Regressions:** Tests compare current performance against established baselines
+3. **Historical Tracking:** We maintain performance history to ensure we're getting faster, not slower
+4. **Intentional Acceptance:** Performance regressions are only accepted when necessary and justified
+
+### Baseline Management Scripts
+
+```bash
+# Accept the most recent test results as the new performance baseline (use with caution)
+npm run accept-perf
+
+# Accept both performance and visual baseline changes at once
+npm run accept-all
+
+# Automatically update baselines during test runs
+npm run updperf
+```
+
+### Comparing Performance Against Baselines
+
+To generate reports showing how current performance compares to the baseline:
+
+```bash
+npm run compare-perf
+```
+
+This generates delta files in the format `performance/deltas/{page-name}.tmp.delta.json` with contents like:
+
+```json
+{
+  "timestamp": "2023-05-15T14:30:00Z",
+  "deltas": {
+    "FCP": {
+      "value": -120,
+      "percentage": "-12%",
+      "improvement": true
+    },
+    "LCP": {
+      "value": 85,
+      "percentage": "+8.5%",
+      "improvement": false
+    },
+    "CLS": {
+      "value": -0.02,
+      "percentage": "-20%",
+      "improvement": true
+    }
+  },
+  "summary": {
+    "improved": 2,
+    "regressed": 1,
+    "unchanged": 0,
+    "overall": "improved"
+  }
+}
+```
+
+For visualizing these changes over time, you can run:
+
+```bash
+npm run diff-report
+```
+
+This generates an HTML report showing both performance trends and visual differences in a single dashboard.
+
+### When to Accept Performance Regressions
+
+While our goal is to continuously improve performance, we recognize that feature additions sometimes unavoidably impact performance metrics. Performance baseline acceptance should follow these guidelines:
+
+1. **Prioritize optimization first:** Before accepting a regression, attempt to optimize the implementation
+2. **Document the justification:** Always document why the performance regression is being accepted
+3. **Quantify the impact:** Understand exactly how much performance is degrading
+4. **Seek team consensus:** Performance regressions should be approved by the team
+5. **Set improvement goals:** When accepting a regression, set goals for future optimization
+
+### Using the Baseline Acceptance Scripts
+
+```bash
+# Run your tests to capture current performance
+npm run test
+
+# If only performance regression needs to be accepted:
+npm run accept-perf
+
+# If both visual and performance changes need to be accepted:
+npm run accept-all
+
+# IMPORTANT: Include a detailed commit message explaining:
+# - Which metrics changed and by how much
+# - Why the regression was necessary
+# - Any future optimization plans
+```
+
+These scripts should be used sparingly. Their purpose is to acknowledge the reality that performance requirements may increase as features are added, while maintaining our commitment to monitoring and improving performance over time.
+
 To update baselines after intentional performance changes:
 
 ```bash

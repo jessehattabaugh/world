@@ -15,11 +15,19 @@ npm-debug.log*
 /blob-report/
 /playwright/.cache/
 
-# Test snapshots - only keep baseline snapshots
+# Test baseline files
 /snapshots/*
 !/snapshots/*baseline*
 !/snapshots/README.md
+/performance/*
+!/performance/*baseline*
+!/performance/README.md
+
+# Temporary test comparison files
+*.tmp.*
 
 # Temporary files
 .DS_Store
 Thumbs.db
+
+reports
