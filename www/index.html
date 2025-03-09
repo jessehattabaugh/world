@@ -4,19 +4,19 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<meta name="description" content="Jesse's World - Personal website and portfolio" data-site-description>
-	<meta name="theme-color" content="#000000">
+	<meta name="description" content="PixelBiome - A WebGPU-powered Ecosystem Simulator" data-site-description>
+	<meta name="theme-color" content="#1a3c2b">
 	<meta name="color-scheme" content="dark light">
 	<meta name="view-transition" content="same-origin">
 
 	<!-- SEO meta tags -->
-	<meta property="og:title" content="Jesse's World">
-	<meta property="og:description" content="Welcome to Jesse's World - Personal website and portfolio">
-	<meta property="og:image" content="/images/og-image.jpg">
+	<meta property="og:title" content="PixelBiome - WebGPU Ecosystem Simulator">
+	<meta property="og:description" content="Interactive 2D ecosystem simulator powered by WebGPU. Explore evolution, genetic algorithms, and ecological balance in your browser.">
+	<meta property="og:image" content="/images/pixelbiome-preview.jpg">
 	<meta name="twitter:card" content="summary_large_image">
 
-	<title>Jesse's World</title>
-	<link rel="canonical" href="https://jessesworld.example.com" />
+	<title>PixelBiome - WebGPU Ecosystem Simulator</title>
+	<link rel="canonical" href="https://pixelbiome.example.com" />
 	<link rel="manifest" href="/manifest.json">
 	<link rel="icon" href="/favicon.ico">
 
@@ -30,7 +30,7 @@
 	<link rel="stylesheet" media="screen and (min-width: 30em)" href="/styles/wide.css">
 	<link rel="stylesheet" href="/styles/index.css">
 	<link rel="stylesheet" href="/styles/modern.css">
-	<link rel="stylesheet" href="/styles/cyberpunk.css">
+	<link rel="stylesheet" href="/styles/ecosystem.css">
 	<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
 
 	<!-- JavaScript that can start now -->
@@ -38,23 +38,24 @@
 
 	<!-- JavaScript that can wait until the document is parsed -->
 	<script type="module" defer src="/scripts/index.js"></script>
-	<script type="module" defer src="/scripts/effects.js"></script>
+	<script type="module" defer src="/scripts/engine/simulator.js"></script>
 </head>
 
-<body class="cyberpunk-theme">
+<body class="ecosystem-theme">
 	<!-- Skip to content link for accessibility -->
 	<a href="#main-content" class="skip-link">Skip to content</a>
 
 	<header role="banner" class="animated-header">
 		<div class="container">
-			<h1 class="glow-text">Jesse's World</h1>
+			<h1 class="glow-text">🌱 PixelBiome</h1>
+			<p class="tagline">A WebGPU-powered Ecosystem Simulator</p>
 
 			<nav role="navigation" aria-label="Main navigation">
 				<ul class="nav-effects">
 					<li><a href="/" aria-current="page" class="hover-effect">Home</a></li>
 					<li><a href="/about" class="hover-effect">About</a></li>
-					<li><a href="/projects" class="hover-effect">Projects</a></li>
-					<li><a href="/contact" class="hover-effect">Contact</a></li>
+					<li><a href="/simulator" class="hover-effect">Simulator</a></li>
+					<li><a href="/docs" class="hover-effect">Documentation</a></li>
 				</ul>
 			</nav>
 
@@ -63,45 +64,117 @@
 	</header>
 
 	<main id="main-content" role="main">
-		<section class="hero gradient-bg">
+		<section class="hero biome-gradient-bg">
 			<div class="container">
-				<h2 class="animate-in">Welcome to my personal website</h2>
-				<p class="animate-in-delay">This site showcases my projects and thoughts on web development, technology, and more.</p>
-				<a href="/about" class="cta-button pulse-effect" role="button">Learn more</a>
+				<h2 class="animate-in">Experience Evolution In Your Browser</h2>
+				<p class="animate-in-delay">An interactive ecosystem simulation leveraging WebGPU, Web Workers, and neural networks to create a living, evolving digital world.</p>
+				<div class="cta-container">
+					<a href="/simulator" class="cta-button pulse-effect" role="button">Launch Simulator</a>
+					<a href="/about" class="secondary-button" role="button">Learn More</a>
+				</div>
 			</div>
 		</section>
 
-		<section class="featured-content">
+		<section class="feature-highlight">
 			<div class="container">
-				<h2 class="section-title">Featured Projects</h2>
+				<h2 class="section-title">Experience the Power of WebGPU</h2>
+				<div class="feature-grid">
+					<div class="feature-item">
+						<div class="feature-icon">🧬</div>
+						<h3>Genetic Algorithms</h3>
+						<p>Watch as digital organisms evolve through generations, adapting to their environment through genetic mutations and natural selection.</p>
+					</div>
+					<div class="feature-item">
+						<div class="feature-icon">🧠</div>
+						<h3>Neural Networks</h3>
+						<p>Lifeforms make decisions using neural networks processed on the GPU, enabling complex behaviors to emerge naturally.</p>
+					</div>
+					<div class="feature-item">
+						<div class="feature-icon">⚡</div>
+						<h3>Parallel Computing</h3>
+						<p>Harness the power of your GPU with WebGPU compute shaders for thousands of simultaneous interactions in real-time.</p>
+					</div>
+					<div class="feature-item">
+						<div class="feature-icon">🔄</div>
+						<h3>Persistent Worlds</h3>
+						<p>Save and reload your ecosystems with offline support powered by Service Workers and IndexedDB.</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="simulator-preview">
+			<div class="container">
+				<h2 class="section-title">Interactive Ecosystem</h2>
+				<div id="simulator-preview-canvas" class="preview-canvas">
+					<!-- WebGPU canvas will be inserted here via JavaScript -->
+					<div class="canvas-placeholder">
+						<p>WebGPU preview loading...</p>
+					</div>
+				</div>
+				<div class="simulator-controls">
+					<button id="spawn-life" class="eco-button" disabled>Spawn Life</button>
+					<button id="toggle-simulation" class="eco-button" disabled>Start/Pause</button>
+					<button id="reset-preview" class="eco-button" disabled>Reset</button>
+				</div>
+			</div>
+		</section>
+
+		<section class="featured-content biome-gradient-bg-alt">
+			<div class="container">
+				<h2 class="section-title">Key Features</h2>
 				<div class="card-grid">
 					<article class="card hover-lift">
 						<div class="card-gradient"></div>
-						<h3>Project One</h3>
-						<p>A brief description of this amazing project with modern web technologies.</p>
-						<a href="/projects/project-one" class="btn-shine">View Project</a>
+						<h3>Tile-Based World</h3>
+						<p>Explore a world divided into tiles, each managed by a Web Worker for parallel processing and rendering.</p>
+						<a href="/docs/architecture" class="btn-shine">Learn More</a>
 					</article>
 					<article class="card hover-lift">
 						<div class="card-gradient"></div>
-						<h3>Project Two</h3>
-						<p>Another fascinating project showcasing different skills and approaches.</p>
-						<a href="/projects/project-two" class="btn-shine">View Project</a>
+						<h3>Real-time Analytics</h3>
+						<p>Track species populations, genetic diversity, and energy flow through dynamic visualization dashboards.</p>
+						<a href="/docs/analytics" class="btn-shine">View Examples</a>
 					</article>
 					<article class="card hover-lift">
 						<div class="card-gradient"></div>
-						<h3>Project Three</h3>
-						<p>A third project example with focus on accessibility and performance.</p>
-						<a href="/projects/project-three" class="btn-shine">View Project</a>
+						<h3>Custom Ecosystems</h3>
+						<p>Create your own worlds by uploading images that are converted into terrain and initial populations.</p>
+						<a href="/simulator/create" class="btn-shine">Create Now</a>
 					</article>
 				</div>
 			</div>
 		</section>
 
-		<section class="about-preview gradient-bg-alt">
+		<section class="tech-stack">
 			<div class="container">
-				<h2 class="section-title">About Me</h2>
-				<p class="animate-on-scroll">I'm a developer passionate about creating accessible, fast, and user-friendly web experiences. I focus on modern web standards and progressive enhancement.</p>
-				<a href="/about" class="text-glow">Read more about me</a>
+				<h2 class="section-title">Powered By Modern Web Technology</h2>
+				<div class="tech-logos">
+					<div class="tech-item">
+						<span class="tech-icon">🔺</span>
+						<span class="tech-name">WebGPU</span>
+					</div>
+					<div class="tech-item">
+						<span class="tech-icon">🧵</span>
+						<span class="tech-name">Web Workers</span>
+					</div>
+					<div class="tech-item">
+						<span class="tech-icon">🎞️</span>
+						<span class="tech-name">OffscreenCanvas</span>
+					</div>
+					<div class="tech-item">
+						<span class="tech-icon">📊</span>
+						<span class="tech-name">Chart.js</span>
+					</div>
+					<div class="tech-item">
+						<span class="tech-icon">💾</span>
+						<span class="tech-name">IndexedDB</span>
+					</div>
+					<div class="tech-item">
+						<span class="tech-icon">🛠️</span>
+						<span class="tech-name">Tweakpane</span>
+					</div>
+				</div>
 			</div>
 		</section>
 	</main>
@@ -110,48 +183,46 @@
 		<div class="container">
 			<div class="footer-content">
 				<div class="footer-section">
-					<h2 class="footer-title">Contact</h2>
-					<address>
-						<a href="mailto:hello@jessesworld.example.com" class="email-hover">hello@jessesworld.example.com</a>
-					</address>
+					<h2 class="footer-title">PixelBiome</h2>
+					<p>An open-source WebGPU-powered ecosystem simulator that demonstrates the power of modern web technologies.</p>
+				</div>
+				<div class="footer-section">
+					<h2 class="footer-title">Resources</h2>
+					<ul class="footer-links">
+						<li><a href="/docs" class="hover-effect">Documentation</a></li>
+						<li><a href="/tutorials" class="hover-effect">Tutorials</a></li>
+						<li><a href="https://github.com/jesse/pixelbiome" class="hover-effect">GitHub Repository</a></li>
+					</ul>
 				</div>
 				<div class="footer-section">
 					<h2 class="footer-title">Links</h2>
 					<ul class="footer-links">
 						<li><a href="/privacy" class="hover-effect">Privacy Policy</a></li>
-						<li><a href="/terms" class="hover-effect">Terms of Service</a></li>
 						<li><a href="/sitemap" class="hover-effect">Sitemap</a></li>
 					</ul>
 				</div>
 			</div>
-			<p class="copyright glow-text">&copy; <time datetime="2025">2025</time> Jesse's World. All rights reserved.</p>
+			<p class="copyright glow-text">&copy; <time datetime="2023">2023</time> PixelBiome. Open source under MIT License.</p>
 		</div>
 	</footer>
 
-	<!-- Audio feedback element (hidden) -->
-	<div id="audio-feedback" aria-hidden="true"></div>
+	<!-- WebGPU Support Check -->
+	<dialog id="webgpu-warning" class="feature-warning">
+		<h2>WebGPU Support Required</h2>
+		<p>PixelBiome requires WebGPU, which is not available in your current browser.</p>
+		<p>Please try Chrome 113+ or Edge 113+, or enable WebGPU in your browser's experimental flags.</p>
+		<button id="close-warning" class="eco-button">Dismiss</button>
+	</dialog>
 
-	<!-- Audio Player Controls -->
-	<div class="music-controls">
-		<button id="music-toggle" class="music-toggle" aria-label="Toggle music">
-			<i>▶</i>
-		</button>
-		<div id="music-visualizer" class="visualizer-container"></div>
-		<button id="new-pattern" class="music-toggle" aria-label="Generate new pattern">
-			<i>🎲</i>
-		</button>
-	</div>
-
-	<!-- Import music generator -->
 	<script type="module">
-		import { initMusicControls } from '/scripts/synth.js';
-		document.addEventListener('DOMContentLoaded', initMusicControls);
+		// Check for WebGPU support
+		if (!navigator.gpu) {
+			document.getElementById('webgpu-warning').showModal();
+			document.getElementById('close-warning').addEventListener('click', () => {
+				document.getElementById('webgpu-warning').close();
+			});
+		}
 	</script>
-
-	<!-- Test Page Content -->
-	<h4>Test Page</h4>
-	<button>Click me</button>
-	<a href="#about">About</a>
 </body>
 
 </html>
