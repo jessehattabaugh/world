@@ -12,7 +12,7 @@ const metrics = {
   timestamp: []
 };
 
-let startTime = performance.now();
+const startTime = performance.now();
 
 // Set up performance observer
 const obs = new PerformanceObserver((list) => {
@@ -44,10 +44,10 @@ obs.observe({ entryTypes: ['measure', 'mark'] });
 
 // Sample GPU memory if available
 async function sampleGPUMemory() {
-  if (!navigator?.gpu) return 0;
+  if (!navigator?.gpu) {return 0;}
 
   const adapter = await navigator.gpu.requestAdapter();
-  if (!adapter) return 0;
+  if (!adapter) {return 0;}
 
   const info = await adapter.requestAdapterInfo();
   return info.maxMemoryUsage || 0;
@@ -71,7 +71,7 @@ function exportMetrics() {
 
 // Utility function for averages
 function average(arr) {
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
+  return arr.reduce((a, b) => {return a + b}, 0) / arr.length;
 }
 
 // Start monitoring and export results on exit

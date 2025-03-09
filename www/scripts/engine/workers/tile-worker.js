@@ -22,7 +22,7 @@ const MATURITY_THRESHOLD = 1.0;
 const MUTATION_RATE = 0.1;
 
 self.onmessage = async ({ data: { type, tile, timestamp } }) => {
-    if (type !== 'process') return;
+    if (type !== 'process') {return;}
 
     // Initialize resource manager if needed
     resourceManager ??= new ResourceManager();
@@ -33,12 +33,12 @@ self.onmessage = async ({ data: { type, tile, timestamp } }) => {
 };
 
 async function processTile(tile, timestamp) {
-    const processed = REUSE.processed;
+    const {processed} = REUSE;
     processed.clear();
 
     // Update neural networks in batches
     for (const entity of tile.entities) {
-        if (!entity.neuralId) continue;
+        if (!entity.neuralId) {continue;}
 
         // Get or create neural network
         let network = neuralNetworks.get(entity.neuralId);
@@ -62,7 +62,7 @@ async function processTile(tile, timestamp) {
 
     // Process interactions in batches
     for (const entity of processed.values()) {
-        if (entity.species === 0) continue; // Skip plants
+        if (entity.species === 0) {continue;} // Skip plants
 
         // Find nearby entities efficiently
         const nearby = findNearbyEntities(entity, processed);
@@ -77,10 +77,10 @@ async function processTile(tile, timestamp) {
         }
 
         // Handle reproduction with first compatible mate
-        const mate = nearby.find(other => canReproduce(entity, other));
+        const mate = nearby.find(other => {return canReproduce(entity, other)});
         if (mate) {
             const child = reproduce(entity, mate);
-            if (child) processed.set(child.id, child);
+            if (child) {processed.set(child.id, child);}
         }
     }
 
@@ -88,18 +88,18 @@ async function processTile(tile, timestamp) {
 }
 
 function findNearbyEntities(entity, entities) {
-    const nearby = REUSE.nearby;
+    const {nearby} = REUSE;
     nearby.length = 0;
     const rangeSq = INTERACTION_RANGE * INTERACTION_RANGE;
 
     for (const other of entities.values()) {
-        if (other.id === entity.id) continue;
+        if (other.id === entity.id) {continue;}
 
         const dx = other.position[0] - entity.position[0];
         const dy = other.position[1] - entity.position[1];
         const distSq = dx * dx + dy * dy;
 
-        if (distSq <= rangeSq) nearby.push(other);
+        if (distSq <= rangeSq) {nearby.push(other);}
     }
 
     return nearby;

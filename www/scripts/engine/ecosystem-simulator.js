@@ -52,7 +52,7 @@ export class EcosystemSimulator {
 
     // Initialize when document is ready
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.initialize());
+      document.addEventListener('DOMContentLoaded', () => {return this.initialize()});
     } else {
       this.initialize();
     }
@@ -138,7 +138,7 @@ export class EcosystemSimulator {
   }
 
   start() {
-    if (!this.state.isInitialized || this.state.isRunning) return;
+    if (!this.state.isInitialized || this.state.isRunning) {return;}
 
     if (this.features.webWorker) {
       this.tileManager.start();
@@ -161,7 +161,7 @@ export class EcosystemSimulator {
    * @param {Object} options - Lifeform options
    */
   spawnLifeform(options = {}) {
-    if (!this.state.isInitialized) return null;
+    if (!this.state.isInitialized) {return null;}
 
     // Create the entity
     const entity = this.features.webWorker ?
@@ -185,9 +185,9 @@ export class EcosystemSimulator {
    * Get the current state of a lifeform
    */
   getLifeformState(id) {
-    if (!this.coreSimulation) return null;
+    if (!this.coreSimulation) {return null;}
     const entity = this.coreSimulation.getLifeformState(id);
-    if (!entity) return null;
+    if (!entity) {return null;}
 
     // Convert to expected test format
     return {
@@ -211,9 +211,9 @@ export class EcosystemSimulator {
    * Get the neural network for a lifeform
    */
   getNeuralNetwork(id) {
-    if (!this.coreSimulation) return null;
+    if (!this.coreSimulation) {return null;}
     const network = this.coreSimulation.networks.get(id);
-    if (!network) return null;
+    if (!network) {return null;}
 
     // Return in format expected by tests
     return {
@@ -239,7 +239,7 @@ export class EcosystemSimulator {
    * Spawn a food resource
    */
   spawnFood(x, y, options = {}) {
-    if (!this.coreSimulation) return null;
+    if (!this.coreSimulation) {return null;}
     return this.coreSimulation.resourceManager.spawnFood(x, y, options);
   }
 
@@ -277,7 +277,7 @@ export class EcosystemSimulator {
    * Step the simulation forward one frame
    */
   async step() {
-    if (!this.coreSimulation || !this.state.isInitialized) return;
+    if (!this.coreSimulation || !this.state.isInitialized) {return;}
 
     const now = performance.now();
     const deltaTime = Math.min((now - this.state.lastFrameTime) / 1000, 0.1);
@@ -298,7 +298,7 @@ export class EcosystemSimulator {
   }
 
   render(timestamp) {
-    if (!this.state.isInitialized || !this.state.isRunning) return;
+    if (!this.state.isInitialized || !this.state.isRunning) {return;}
 
     const deltaTime = (timestamp - this.state.lastFrameTime) / 1000;
     this.state.lastFrameTime = timestamp;
@@ -395,7 +395,7 @@ export class EcosystemSimulator {
    * @private
    */
   drawStats(ctx) {
-    if (!this.options.showStats) return;
+    if (!this.options.showStats) {return;}
 
     ctx.font = '12px monospace';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';

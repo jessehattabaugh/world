@@ -3,7 +3,7 @@
 let audioContext;
 let audioInitialized = false;
 const OSCILLATOR_POOL_SIZE = 8;
-let oscillatorPool = [];
+const oscillatorPool = [];
 let nextOscillator = 0;
 
 // Performance optimization flags
@@ -17,7 +17,7 @@ const PERF_FLAGS = {
 
 // Initialize pooled audio resources
 function initAudio() {
-	if (audioInitialized) return;
+	if (audioInitialized) {return;}
 
 	audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -57,7 +57,7 @@ function getOscillator() {
 
 // Play sound using pooled oscillators
 function playSound(frequency, type = 'sine', duration = 0.15, volume = 0.2) {
-	if (!audioInitialized) return;
+	if (!audioInitialized) {return;}
 
 	const { oscillator, gainNode } = getOscillator();
 	oscillator.type = type;
@@ -72,13 +72,13 @@ function playSound(frequency, type = 'sine', duration = 0.15, volume = 0.2) {
 }
 
 // UI Sound effects
-const clickSound = () => playSound(800, 'sine', 0.08, 0.15);
-const hoverSound = () => PERF_FLAGS.enableHoverSounds && playSound(1200, 'sine', 0.05, 0.05);
+const clickSound = () => {return playSound(800, 'sine', 0.08, 0.15)};
+const hoverSound = () => {return PERF_FLAGS.enableHoverSounds && playSound(1200, 'sine', 0.05, 0.05)};
 const successSound = () => {
-	if (!audioInitialized) return;
-	setTimeout(() => playSound(600, 'sine', 0.1), 0);
-	setTimeout(() => playSound(800, 'sine', 0.1), 100);
-	setTimeout(() => playSound(1000, 'sine', 0.2), 200);
+	if (!audioInitialized) {return;}
+	setTimeout(() => {return playSound(600, 'sine', 0.1)}, 0);
+	setTimeout(() => {return playSound(800, 'sine', 0.1)}, 100);
+	setTimeout(() => {return playSound(1000, 'sine', 0.2)}, 200);
 };
 
 // Mouse trail optimization
@@ -92,19 +92,19 @@ const particlePool = new Array(PERF_FLAGS.maxParticles).fill(null).map(() => {
 let nextParticle = 0;
 
 function createMouseTrail() {
-	if (!PERF_FLAGS.enableMouseTrail) return;
+	if (!PERF_FLAGS.enableMouseTrail) {return;}
 
 	const trailContainer = document.createElement('div');
 	trailContainer.className = 'mouse-trail-container';
 	document.body.appendChild(trailContainer);
 
 	// Add particles to container
-	particlePool.forEach((particle) => trailContainer.appendChild(particle));
+	particlePool.forEach((particle) => {return trailContainer.appendChild(particle)});
 
 	// Optimized mousemove handler using throttling and particle pool
-	let mouseMoveCallback = (e) => {
+	const mouseMoveCallback = (e) => {
 		const now = performance.now();
-		if (now - lastParticleTime < PERF_FLAGS.minTimeBetweenParticles) return;
+		if (now - lastParticleTime < PERF_FLAGS.minTimeBetweenParticles) {return;}
 		lastParticleTime = now;
 
 		const particle = particlePool[nextParticle];
@@ -160,7 +160,7 @@ function createMouseTrail() {
 
 // Optimized scroll animations using IntersectionObserver
 function handleScrollAnimations() {
-  if (!PERF_FLAGS.enableScrollAnimations) return;
+  if (!PERF_FLAGS.enableScrollAnimations) {return;}
 
   const observer = new IntersectionObserver(
     (entries) => {

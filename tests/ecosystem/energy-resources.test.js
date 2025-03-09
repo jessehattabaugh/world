@@ -19,7 +19,7 @@ test.describe('Energy and Resources - Milestone 2', () => {
     test('should properly manage lifeform energy consumption', async ({ page }) => {
       const energyResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Create test lifeform with specific metabolism
         const lifeform = simulator.spawnLifeform(100, 100, {
@@ -52,7 +52,7 @@ test.describe('Energy and Resources - Milestone 2', () => {
     test('should handle death when energy depleted', async ({ page }) => {
       const depletionResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Create lifeform with very low energy
         const lifeform = simulator.spawnLifeform(100, 100, {
@@ -89,7 +89,7 @@ test.describe('Energy and Resources - Milestone 2', () => {
     test('should handle food spawning and consumption', async ({ page }) => {
       const foodResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Create herbivore and food source
         const herbivore = simulator.spawnLifeform(100, 100, {
@@ -135,7 +135,7 @@ test.describe('Energy and Resources - Milestone 2', () => {
     test('should manage resource distribution and regeneration', async ({ page }) => {
       const resourceResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Record initial resource count
         const initialCount = simulator.stats.resourceCount;
@@ -158,7 +158,7 @@ test.describe('Energy and Resources - Milestone 2', () => {
         // Check final state
         const finalCount = simulator.stats.resourceCount;
         const originalResourcesExist = resources.some(r =>
-          simulator.getResourceState(r.id)
+          {return simulator.getResourceState(r.id)}
         );
         const newResourcesSpawned = finalCount > resources.length;
 

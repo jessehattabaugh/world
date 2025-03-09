@@ -29,18 +29,86 @@ Our testing framework automatically generates test scaffolds for each page in th
 
 ### Running Tests
 
+### Test Command Workflows
+
+The npm scripts are organized into common workflows for different testing scenarios:
+
+#### Quick Development Cycle
+1. Start the dev server: `npm run dev`
+2. Run focused tests: `npm run test:e2e` or `npm run test:unit`
+3. If issues occur: `npm run test:debug` or `npm run test:ui`
+
+#### Visual Testing Workflow
+1. Make UI changes
+2. Generate new screenshots: `npm run shots`
+3. Compare changes: `npm run visual:compare`
+4. If changes are intentional: `npm run shots:accept`
+
+#### Performance Testing Workflow
+1. Run benchmarks: `npm run perf:benchmark`
+2. Monitor metrics: `npm run perf:monitor`
+3. Analyze results: `npm run perf:analyze`
+4. If changes are accepted: `npm run test:perf`
+
+#### Full Testing Suite
+1. Clean temporary files: `npm run clean`
+2. Check code style: `npm run lint`
+3. Run all tests: `npm run test:all`
+4. View report: `npm run report`
+
+### Test Command Organization
+
+The npm scripts are organized into logical groups based on frequency of use and purpose:
+
+#### Common Testing Commands
 ```bash
-# Run all tests
-npm test
+npm test         # Run all tests (alias for test:all)
+npm run test:ui  # Open test UI for interactive debugging
+npm run test:debug # Run tests with debugger attached
+```
 
-# Run tests for specific environments
-npm run local     # Local environment
-npm run staging   # Staging environment
-npm run prod      # Production environment
-npm run url       # Custom URL (set TEST_URL env variable)
+#### Core Test Categories
+```bash
+npm run test:unit    # Run unit tests
+npm run test:e2e     # Run end-to-end tests
+npm run test:visual  # Run visual tests
+npm run test:perf    # Run performance tests
+npm run test:all     # Run all test categories
+```
 
-# Run just a quick test suite
-npm run quick
+#### Visual Testing Workflow
+```bash
+# Generate new screenshots
+npm run shots
+
+# Compare current state against baselines
+npm run visual:compare
+
+# Accept new screenshots as baseline
+npm run shots:accept
+
+# Do everything in one command
+npm run visual
+```
+
+#### Performance Testing Workflow
+```bash
+# Run performance tests
+npm run test:perf
+
+# Run comprehensive performance analysis
+npm run perf
+
+# Update performance baselines
+npm run perf:accept
+```
+
+#### Running Tests in Different Environments
+```bash
+npm run local    # Test against local dev server
+npm run staging  # Test against staging environment
+npm run prod     # Test against production
+npm run ci       # Run CI test suite
 ```
 
 ## Page and Test Generation

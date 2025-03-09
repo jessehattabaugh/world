@@ -19,7 +19,7 @@ test.describe('Ecosystem Performance Tests', () => {
       window.frameTimings = [];
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        window.frameTimings.push(...entries.map(e => e.duration));
+        window.frameTimings.push(...entries.map(e => {return e.duration}));
       });
       observer.observe({ entryTypes: ['measure'] });
     });
@@ -41,7 +41,7 @@ test.describe('Ecosystem Performance Tests', () => {
         const spawnTime = performance.now() - spawnStart;
 
         // Run simulation for a few frames to stabilize
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => {return setTimeout(r, 1000)});
 
         // Measure performance
         const stats = sim.getStats();
@@ -59,10 +59,10 @@ test.describe('Ecosystem Performance Tests', () => {
 
     // Analyze results
     const violations = results.filter(m =>
-      m.fps < PERF_THRESHOLDS.minFps ||
+      {return m.fps < PERF_THRESHOLDS.minFps ||
       m.frameTime > PERF_THRESHOLDS.maxFrameTime ||
       m.gpuMemory > PERF_THRESHOLDS.maxGpuMemory ||
-      m.spawnTime > PERF_THRESHOLDS.maxEntitySpawnTime
+      m.spawnTime > PERF_THRESHOLDS.maxEntitySpawnTime}
     );
 
     // Save performance results
@@ -100,7 +100,7 @@ test.describe('Ecosystem Performance Tests', () => {
 
         // Run simulation and measure
         sim.start();
-        await new Promise(r => setTimeout(r, 5000));
+        await new Promise(r => {return setTimeout(r, 5000)});
 
         const stats = sim.getStats();
         results.push({
@@ -129,7 +129,7 @@ test.describe('Ecosystem Performance Tests', () => {
   });
 
   test('should efficiently handle WebGPU compute scaling', async ({ page }) => {
-    test.skip(!await page.evaluate(() => 'gpu' in navigator),
+    test.skip(!await page.evaluate(() => {return 'gpu' in navigator}),
       'WebGPU not supported in this browser');
 
     await page.goto('http://localhost:3000');
@@ -151,7 +151,7 @@ test.describe('Ecosystem Performance Tests', () => {
 
         // Run and measure
         sim.start();
-        await new Promise(r => setTimeout(r, 5000));
+        await new Promise(r => {return setTimeout(r, 5000)});
 
         const stats = sim.getStats();
         const gpuStats = sim.gpuManager.getStats();
@@ -171,7 +171,7 @@ test.describe('Ecosystem Performance Tests', () => {
 
     // Find optimal workgroup size
     const optimal = gpuScalingResults.reduce((a, b) =>
-      a.computeTime < b.computeTime ? a : b
+      {return a.computeTime < b.computeTime ? a : b}
     );
 
     console.log('Optimal WebGPU configuration:', optimal);

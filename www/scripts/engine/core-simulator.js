@@ -80,7 +80,7 @@ export class CoreSimulator {
      */
     getLifeformState(id) {
         const entity = this.entities.get(id);
-        if (!entity) return null;
+        if (!entity) {return null;}
 
         return {
             position: { ...entity.position },
@@ -113,8 +113,8 @@ export class CoreSimulator {
                 'reproduce'
             ],
             weights: {
-                inputHidden: Array(48).fill(0).map(() => Math.random() * 2 - 1),
-                hiddenOutput: Array(32).fill(0).map(() => Math.random() * 2 - 1)
+                inputHidden: Array(48).fill(0).map(() => {return Math.random() * 2 - 1}),
+                hiddenOutput: Array(32).fill(0).map(() => {return Math.random() * 2 - 1})
             }
         };
 
@@ -127,7 +127,7 @@ export class CoreSimulator {
      */
     getNeuralNetwork(entityId) {
         const entity = this.entities.get(entityId);
-        if (!entity) return null;
+        if (!entity) {return null;}
         return this.neuralNetworks.get(entity.neuralId);
     }
 
@@ -196,10 +196,10 @@ export class CoreSimulator {
     async step() {
         // Update neural networks
         for (const entity of this.entities.values()) {
-            if (entity.species === 0) continue; // Skip food
+            if (entity.species === 0) {continue;} // Skip food
 
             const network = this.getNeuralNetwork(entity.id);
-            if (!network) continue;
+            if (!network) {continue;}
 
             // Process network inputs
             const nearestFood = this.findNearestFood(entity);
@@ -216,11 +216,11 @@ export class CoreSimulator {
 
             // Forward pass (simplified for now)
             const hiddenLayer = network.weights.inputHidden.map((w, i) =>
-                Math.max(0, inputs[Math.floor(i / 8)] * w)
+                {return Math.max(0, inputs[Math.floor(i / 8)] * w)}
             );
 
             const outputs = network.weights.hiddenOutput.map((w, i) =>
-                1 / (1 + Math.exp(-hiddenLayer[Math.floor(i / 4)] * w))
+                {return 1 / (1 + Math.exp(-hiddenLayer[Math.floor(i / 4)] * w))}
             );
 
             // Apply outputs
@@ -265,7 +265,7 @@ export class CoreSimulator {
         let minDist = Infinity;
 
         for (const food of this.entities.values()) {
-            if (food.species !== 0) continue; // Skip non-food
+            if (food.species !== 0) {continue;} // Skip non-food
 
             const dx = food.position.x - entity.position.x;
             const dy = food.position.y - entity.position.y;
@@ -287,13 +287,13 @@ export class CoreSimulator {
      * Find nearest predator to an entity
      */
     findNearestPredator(entity) {
-        if (entity.species === 2) return null; // Predators don't track other predators
+        if (entity.species === 2) {return null;} // Predators don't track other predators
 
         let nearest = null;
         let minDist = Infinity;
 
         for (const other of this.entities.values()) {
-            if (other.species !== 2) continue; // Skip non-predators
+            if (other.species !== 2) {continue;} // Skip non-predators
 
             const dx = other.position.x - entity.position.x;
             const dy = other.position.y - entity.position.y;
@@ -319,7 +319,7 @@ export class CoreSimulator {
         let totalLifeforms = 0;
 
         for (const entity of this.entities.values()) {
-            if (entity.species === 0) continue; // Skip food
+            if (entity.species === 0) {continue;} // Skip food
             totalEnergy += entity.energy;
             totalLifeforms++;
         }

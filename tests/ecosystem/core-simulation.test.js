@@ -20,7 +20,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
       // Verify lifeform buffer structure
       const bufferStructure = await page.evaluate(() => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator?.lifeformBuffer) return null;
+        if (!simulator?.lifeformBuffer) {return null;}
 
         return {
           // Check buffer attributes match our data structure
@@ -48,7 +48,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
       // Test spawning multiple lifeforms
       const spawnResults = await page.evaluate(() => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Spawn test lifeforms
         const positions = [
@@ -58,14 +58,14 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
         ];
 
         const lifeforms = positions.map(pos =>
-          simulator.spawnLifeform(pos.x, pos.y)
+          {return simulator.spawnLifeform(pos.x, pos.y)}
         );
 
         return {
           spawnedCount: lifeforms.length,
           totalCount: simulator.stats.entityCount,
-          hasValidIds: lifeforms.every(l => l.id >= 0),
-          uniqueIds: new Set(lifeforms.map(l => l.id)).size
+          hasValidIds: lifeforms.every(l => {return l.id >= 0}),
+          uniqueIds: new Set(lifeforms.map(l => {return l.id})).size
         };
       });
 
@@ -83,7 +83,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
 
       const shaderStatus = await page.evaluate(() => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator?.computePipeline) return null;
+        if (!simulator?.computePipeline) {return null;}
 
         return {
           hasUpdatePipeline: !!simulator.computePipeline.update,
@@ -104,7 +104,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
       // Test that lifeform states are updated by compute shader
       const updateResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Spawn a test lifeform
         const lifeform = simulator.spawnLifeform(100, 100);
@@ -139,7 +139,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
 
       const geneticResults = await page.evaluate(() => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Spawn parent lifeform with specific genes
         const parent = simulator.spawnLifeform(100, 100, {
@@ -148,7 +148,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
           metabolism: 1.0
         });
 
-        const genes = simulator.getLifeformState(parent.id).genes;
+        const {genes} = simulator.getLifeformState(parent.id);
 
         return {
           hasGenes: !!genes,
@@ -172,7 +172,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
 
       const inheritanceResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Create parent lifeforms
         const parent1 = simulator.spawnLifeform(100, 100, {
@@ -219,7 +219,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
 
       const nnResults = await page.evaluate(() => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         const lifeform = simulator.spawnLifeform(100, 100);
         const network = simulator.getNeuralNetwork(lifeform.id);
@@ -251,7 +251,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
 
       const decisionResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Create test scenario
         const lifeform = simulator.spawnLifeform(100, 100);

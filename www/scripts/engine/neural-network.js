@@ -146,9 +146,9 @@ export class NeuralNetwork {
     }
 
     setWeights(weights) {
-        if (weights.input) this.weights.input.set(weights.input);
-        if (weights.hidden) this.weights.hidden.set(weights.hidden);
-        if (weights.hiddenBias) this.biases.hidden.set(weights.hiddenBias);
-        if (weights.outputBias) this.biases.output.set(weights.outputBias);
+        if (weights.input) {this.weights.input.set(weights.input);}
+        if (weights.hidden) {this.weights.hidden.set(weights.hidden);}
+        if (weights.hiddenBias) {this.biases.hidden.set(weights.hiddenBias);}
+        if (weights.outputBias) {this.biases.output.set(weights.outputBias);}
     }
 }

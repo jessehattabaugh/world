@@ -51,7 +51,7 @@ export class CoreSimulation {
 
         // Load and preprocess compute shader
         const shaderCode = await fetch('/scripts/shaders/neural-compute.wgsl')
-            .then(r => r.text());
+            .then(r => {return r.text()});
 
         const processedCode = await preprocessShader(shaderCode, {
             defines: {
@@ -318,7 +318,7 @@ export class CoreSimulation {
      */
     getLifeformState(id) {
         const entity = this.entities.get(id);
-        if (!entity) return null;
+        if (!entity) {return null;}
         return {
             id: entity.id,
             type: this.getLifeformType(entity.species),
@@ -352,13 +352,13 @@ export class CoreSimulation {
      */
     canReproduce(entity1, entity2) {
         // Must be same species
-        if (entity1.species !== entity2.species) return false;
+        if (entity1.species !== entity2.species) {return false;}
 
         // Must be mature
-        if (entity1.age < 100 || entity2.age < 100) return false;
+        if (entity1.age < 100 || entity2.age < 100) {return false;}
 
         // Must have enough energy
-        if (entity1.energy < 50 || entity2.energy < 50) return false;
+        if (entity1.energy < 50 || entity2.energy < 50) {return false;}
 
         // Must be close enough
         const dx = entity1.position[0] - entity2.position[0];
@@ -438,7 +438,7 @@ export class CoreSimulation {
      */
     handlePredation(predator, prey) {
         // Only carnivores can be predators
-        if (predator.species !== 2) return;
+        if (predator.species !== 2) {return;}
 
         // Check if prey is within range
         const dx = predator.position[0] - prey.position[0];

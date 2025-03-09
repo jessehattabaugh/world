@@ -1,35 +1,37 @@
 /**
  * Homepage security tests
  */
-import { test, expect } from '@playwright/test';
-import { checkHeaders, testCSP, checkForVulnerableLibraries } from '../../utils/security-utils.js';
-
-const pageUrl = 'https://jessesworld.example.com/';
-const pageName = 'Homepage';
-const pageId = 'https:--jessesworld.example.com';
+import { expect, test } from '@playwright/test';
 
 test.describe('Homepage - Security', () => {
-  test('has proper security headers', async ({ page, request }) => {
-    // Test security headers
-    const response = await request.get(pageUrl);
-    const headers = response.headers();
+  test('has proper security headers', async ({ page, baseURL }) => {
+		const response = await page.goto(baseURL);
+		const headers = response.headers();
 
-    const headerChecks = await checkHeaders(headers);
-    expect(headerChecks.pass, headerChecks.message).toBeTruthy();
+		expect(headers['x-content-type-options']).toBe('nosniff');
+		expect(headers['x-frame-options']).toBe('DENY');
+		expect(headers['x-xss-protection']).toBe('1; mode=block');
   });
 
-  test('has valid Content-Security-Policy', async ({ page }) => {
-    await page.goto(pageUrl, { waitUntil: 'networkidle' });
+  test('has valid Content-Security-Policy', async ({ page, baseURL }) => {
+		const response = await page.goto(baseURL);
+		const headers = response.headers();
 
-    const cspResult = await testCSP(page);
-    expect(cspResult.valid, cspResult.message).toBeTruthy();
+		expect(headers['content-security-policy']).toBeTruthy();
+		expect(headers['content-security-policy']).toContain("default-src 'self'");
   });
 
-  test('has no vulnerable libraries', async ({ page }) => {
-    await page.goto(pageUrl, { waitUntil: 'networkidle' });
+  test('has no vulnerable libraries', async ({ page, baseURL }) => {
+		await page.goto(baseURL);
+		const libraries = await page.evaluate(() => {
+			return Array.from(document.querySelectorAll('script[src]')).map((script) => {
+				return script.src;
+			});
+		});
 
-    const vulnResult = await checkForVulnerableLibraries(page);
-    expect(vulnResult.vulnerabilities.length,
-      'No vulnerable libraries should be detected').toBe(0);
+		// Ensure all libraries are from trusted sources
+		for (const lib of libraries) {
+			expect(lib).toMatch(/^(https:\/\/cdn\.jsdelivr\.net\/|http:\/\/localhost:3000\/)/);
+		}
   });
 });

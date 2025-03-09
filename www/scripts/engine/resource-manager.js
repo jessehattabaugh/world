@@ -69,7 +69,7 @@ export class ResourceManager {
      */
     tryConsumeResource(resourceId, consumerId) {
         const resource = this.resources.get(resourceId);
-        if (!resource) return 0;
+        if (!resource) {return 0;}
 
         const energyGained = resource.energy;
         this.resources.delete(resourceId);
@@ -126,6 +126,6 @@ export class ResourceManager {
             }
         }
 
-        return nearby.sort((a, b) => a.distance - b.distance);
+        return nearby.sort((a, b) => {return a.distance - b.distance});
     }
 }

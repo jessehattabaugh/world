@@ -20,7 +20,7 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
     test('should detect and handle predator-prey interactions', async ({ page }) => {
       const predationResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Create predator and prey
         const predator = simulator.spawnLifeform(100, 100, {
@@ -73,7 +73,7 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
     test('should handle reproduction between compatible lifeforms', async ({ page }) => {
       const reproductionResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Create two compatible lifeforms
         const parent1 = simulator.spawnLifeform(100, 100, {
@@ -116,7 +116,7 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
     test('should prevent reproduction between incompatible types', async ({ page }) => {
       const incompatibleResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Create two incompatible lifeforms
         const predator = simulator.spawnLifeform(100, 100, {
@@ -158,7 +158,7 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
     test('should apply random mutations during reproduction', async ({ page }) => {
       const mutationResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
-        if (!simulator) return null;
+        if (!simulator) {return null;}
 
         // Create parent lifeforms with identical genes
         const baseGenes = {
@@ -188,27 +188,27 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
         }
 
         // Check for genetic variations
-        const variations = children.map(child => ({
+        const variations = children.map(child => {return {
           speedDiff: Math.abs(child.genes.speed - baseGenes.speed),
           senseDiff: Math.abs(child.genes.senseRange - baseGenes.senseRange),
           metabolismDiff: Math.abs(child.genes.metabolism - baseGenes.metabolism),
           sizeDiff: Math.abs(child.genes.size - baseGenes.size)
-        }));
+        }});
 
         return {
           // Check if at least some children have mutations
           hasMutations: variations.some(v =>
-            v.speedDiff > 0 ||
+            {return v.speedDiff > 0 ||
             v.senseDiff > 0 ||
             v.metabolismDiff > 0 ||
-            v.sizeDiff > 0
+            v.sizeDiff > 0}
           ),
           // Verify mutations are within acceptable ranges
           mutationsInRange: variations.every(v =>
-            v.speedDiff <= baseGenes.speed * 0.2 && // Max 20% mutation
+            {return v.speedDiff <= baseGenes.speed * 0.2 && // Max 20% mutation
             v.senseDiff <= baseGenes.senseRange * 0.2 &&
             v.metabolismDiff <= baseGenes.metabolism * 0.2 &&
-            v.sizeDiff <= baseGenes.size * 0.2
+            v.sizeDiff <= baseGenes.size * 0.2}
           )
         };
       });

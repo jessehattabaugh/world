@@ -124,7 +124,7 @@ async function runScenario(page, scenario) {
 
   // Check for potential memory leaks
   // We consider it a leak if we retain more than 10% of peak memory
-  const peakMemory = Math.max(...scenarioResult.steps.map(s => s.memoryDelta));
+  const peakMemory = Math.max(...scenarioResult.steps.map(s => {return s.memoryDelta}));
   scenarioResult.potentialLeak = totalDiff.heapDiff > (peakMemory * 0.1);
 
   if (scenarioResult.potentialLeak) {

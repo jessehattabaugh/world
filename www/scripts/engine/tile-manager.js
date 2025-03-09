@@ -107,16 +107,16 @@ export class TileManager {
 
         // Find available workers and assign tiles
         for (const [workerId, workerInfo] of this.workers) {
-            if (workerInfo.busy) continue;
+            if (workerInfo.busy) {continue;}
 
             // Find unprocessed tiles
             const unprocessedTiles = Array.from(this.tiles.values())
                 .filter(tile =>
-                    tile.lastProcessed < timestamp &&
-                    tile.entities.size > 0
+                    {return tile.lastProcessed < timestamp &&
+                    tile.entities.size > 0}
                 );
 
-            if (unprocessedTiles.length === 0) break;
+            if (unprocessedTiles.length === 0) {break;}
 
             // Assign tile to worker
             const tile = unprocessedTiles[0];
@@ -133,7 +133,7 @@ export class TileManager {
                     width: tile.width,
                     height: tile.height
                 },
-                entities: Array.from(tile.entities).map(id => entities.get(id))
+                entities: Array.from(tile.entities).map(id => {return entities.get(id)})
             };
 
             // Process tile

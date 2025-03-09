@@ -152,34 +152,51 @@ npm run dev
 
 ## Testing
 
-The project includes several types of automated tests:
+The project includes several types of automated tests organized by their function and frequency of use. Key test scripts are grouped by purpose and ordered by usage frequency.
 
-- WebGPU shader validation
-- Ecosystem simulation correctness
-- Performance metrics
-- Visual regression
-- Accessibility compliance
-
-### Running Tests
-
+### Commonly Used Commands
 ```bash
-# Run all tests against local dev server
-npm test
-
-# Run against specific environments
-npm run local     # Local development
-npm run staging   # Staging environment
-npm run prod      # Production environment
-
-# Other test commands
-npm run debug     # Run tests with debugger
-npm run ui        # Run tests with UI mode
-npm run quick     # Run quick test suite
-
-# Update baselines
-npm run updshots  # Update visual snapshots
-npm run updperf   # Update performance baselines
+npm start          # Start the application
+npm test          # Run all tests
+npm run dev       # Start development server
+npm run test:ui   # Run tests with UI mode
+npm run test:debug # Run tests with debugger
 ```
+
+### Test Categories
+```bash
+npm run test:unit    # Unit tests only
+npm run test:e2e     # End-to-end tests
+npm run test:visual  # Visual regression tests
+npm run test:perf    # Performance tests
+npm run test:stress  # Stress tests
+npm run test:memory  # Memory leak tests
+
+# Run comprehensive test suites
+npm run test:all     # All tests in sequence
+```
+
+### Visual Testing
+```bash
+npm run visual          # Run visual tests
+npm run visual:update   # Update visual baselines
+npm run visual:compare  # Compare against baselines
+npm run shots          # Generate screenshots
+npm run shots:accept   # Accept new screenshots
+```
+
+### Performance Testing
+```bash
+npm run perf           # Run all performance tests
+npm run perf:benchmark # Run benchmarks
+npm run perf:monitor   # Monitor performance
+npm run perf:analyze   # Analyze bundle and Lighthouse
+```
+
+For detailed information about the testing strategy and implementation:
+- [Tests Documentation](./tests/README.md)
+- [Performance Documentation](./performance/README.md)
+- [Visual Testing Documentation](./snapshots/README.md)
 
 ### Test Reports
 

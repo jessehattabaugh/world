@@ -114,7 +114,7 @@ async function runBenchmark(page, config) {
   }, 100);
 
   // Wait for benchmark duration
-  await new Promise(r => setTimeout(r, config.duration));
+  await new Promise(r => {return setTimeout(r, config.duration)});
   clearInterval(interval);
 
   // Stop simulation and calculate final metrics

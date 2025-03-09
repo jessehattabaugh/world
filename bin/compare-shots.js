@@ -31,8 +31,8 @@ if (!fs.existsSync(snapshotsDir)) {
 try {
   // Find all reference screenshots
   const referenceShots = fs.readdirSync(snapshotsDir)
-    .filter(file => file.endsWith('.png') && !file.includes('.diff.'))
-    .map(file => path.join(snapshotsDir, file));
+    .filter(file => {return file.endsWith('.png') && !file.includes('.diff.')})
+    .map(file => {return path.join(snapshotsDir, file)});
 
   if (referenceShots.length === 0) {
     console.log('No reference screenshots found to compare.');
