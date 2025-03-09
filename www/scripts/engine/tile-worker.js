@@ -24,9 +24,9 @@ let frameCount = 0;
 let adapter = null;
 let device = null;
 let computePipeline = null;
-let renderPipeline = null;
+const renderPipeline = null;
 let simulationShaderModule = null;
-let renderShaderModule = null;
+const renderShaderModule = null;
 
 // Feature support
 const features = {
@@ -190,7 +190,7 @@ function initializeTile(tileId, tileInfo, canvas) {
   const tile = {
     id: tileId,
     info: tileInfo,
-    canvas: canvas,
+    canvas,
     context: null,
     entities: [],
     lastUpdate: 0,
@@ -255,7 +255,7 @@ function initializeTile(tileId, tileInfo, canvas) {
  * @param {number} maxEntities - Maximum number of entities to allocate space for
  */
 function createTileBuffers(tile, maxEntities = 100) {
-  if (!device || !features.webGPU) return;
+  if (!device || !features.webGPU) {return;}
 
   // Entity size in bytes (2 vec2f + 2 f32 + 1 u32 + padding)
   const ENTITY_SIZE = 4 * 4 + 4 * 2 + 4 + 4; // 32 bytes
@@ -316,7 +316,7 @@ function createTileBuffers(tile, maxEntities = 100) {
  */
 function spawnEntity(tileId, entityData) {
   const tile = assignedTiles.get(tileId);
-  if (!tile) return;
+  if (!tile) {return;}
 
   // Add the entity to the tile
   tile.entities.push({
@@ -346,7 +346,7 @@ function spawnEntity(tileId, entityData) {
  */
 function updateTileSimulation(tileId, deltaTime) {
   const tile = assignedTiles.get(tileId);
-  if (!tile || !tile.ready) return;
+  if (!tile || !tile.ready) {return;}
 
   // Update timestamp
   tile.lastUpdate = Date.now();
@@ -354,7 +354,7 @@ function updateTileSimulation(tileId, deltaTime) {
   // If we have WebGPU, use the compute shader
   if (features.webGPU && device && tile.buffers && tile.entities.length > 0) {
     // Only update if we have entities
-    if (tile.entities.length === 0) return;
+    if (tile.entities.length === 0) {return;}
 
     // Update params buffer with current deltaTime and frameCount
     const paramsData = new ArrayBuffer(16);
@@ -487,13 +487,13 @@ async function readTileResults(tile) {
  */
 function updateEntitiesCPU(tile, deltaTime) {
   // Skip if the tile has no entities
-  if (!tile.entities.length) return;
+  if (!tile.entities.length) {return;}
 
   // Update each entity
   tile.entities.forEach(entity => {
     // Create velocity properties if they don't exist
-    if (entity.vx === undefined) entity.vx = 0;
-    if (entity.vy === undefined) entity.vy = 0;
+    if (entity.vx === undefined) {entity.vx = 0;}
+    if (entity.vy === undefined) {entity.vy = 0;}
 
     // Add some random movement
     const randomAngle = Math.random() * Math.PI * 2;
@@ -534,7 +534,7 @@ function updateEntitiesCPU(tile, deltaTime) {
   });
 
   // Remove dead entities
-  tile.entities = tile.entities.filter(entity => entity.energy > 0);
+  tile.entities = tile.entities.filter(entity => {return entity.energy > 0});
 }
 
 /**
@@ -543,7 +543,7 @@ function updateEntitiesCPU(tile, deltaTime) {
  */
 function drawTile(tile) {
   // Skip if there's no canvas or context
-  if (!tile.canvas || !tile.context) return;
+  if (!tile.canvas || !tile.context) {return;}
 
   // If we have a WebGPU context, use WebGPU rendering
   if (tile.context.constructor.name === 'GPUCanvasContext') {
@@ -638,7 +638,7 @@ function resetAllTiles() {
  */
 function updateLoop() {
   // Skip if not running
-  if (!isRunning) return;
+  if (!isRunning) {return;}
 
   // Calculate delta time
   const now = performance.now();
@@ -664,7 +664,7 @@ function updateLoop() {
       frameCount,
       tileCount: assignedTiles.size,
       entityCount: Array.from(assignedTiles.values())
-        .reduce((sum, tile) => sum + tile.entities.length, 0)
+        .reduce((sum, tile) => {return sum + tile.entities.length}, 0)
     });
   }
 

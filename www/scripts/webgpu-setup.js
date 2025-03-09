@@ -375,7 +375,7 @@ async function initWebGPU(statusContainer) {
  * @param {boolean} [isError=false] - Whether this is an error message
  */
 function logStatus(container, message, isError = false) {
-  if (!container) return;
+  if (!container) {return;}
 
   const messageElement = document.createElement('div');
   messageElement.innerHTML = message;

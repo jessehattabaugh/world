@@ -63,7 +63,7 @@ export class EcosystemSimulator {
 
     // Initialize when document is ready
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.initialize());
+      document.addEventListener('DOMContentLoaded', () => {return this.initialize()});
     } else {
       this.initialize();
     }
@@ -184,7 +184,7 @@ export class EcosystemSimulator {
    * @private
    */
   showFallbackContent(errorMessage) {
-    if (!this.container) return;
+    if (!this.container) {return;}
 
     const fallbackHtml = `
       <div class="canvas-placeholder">
@@ -203,8 +203,8 @@ export class EcosystemSimulator {
    * Start the simulation
    */
   start() {
-    if (!this.isInitialized) return;
-    if (this.isRunning) return;
+    if (!this.isInitialized) {return;}
+    if (this.isRunning) {return;}
 
     // Start tile workers
     this.tileManager.start();
@@ -221,8 +221,8 @@ export class EcosystemSimulator {
    * Stop the simulation
    */
   stop() {
-    if (!this.isInitialized) return;
-    if (!this.isRunning) return;
+    if (!this.isInitialized) {return;}
+    if (!this.isRunning) {return;}
 
     // Stop tile workers
     this.tileManager.stop();
@@ -248,7 +248,7 @@ export class EcosystemSimulator {
    * Reset the simulation
    */
   reset() {
-    if (!this.isInitialized) return;
+    if (!this.isInitialized) {return;}
 
     // Stop simulation if running
     const wasRunning = this.isRunning;
@@ -282,7 +282,7 @@ export class EcosystemSimulator {
    * @private
    */
   render(timestamp) {
-    if (!this.isInitialized || !this.isRunning) return;
+    if (!this.isInitialized || !this.isRunning) {return;}
 
     // Calculate delta time and update stats
     const deltaTime = timestamp - this.lastFrameTime;
@@ -400,7 +400,7 @@ export class EcosystemSimulator {
    * @returns {Object} - The created entity
    */
   spawnEntity(options) {
-    if (!this.isInitialized) return null;
+    if (!this.isInitialized) {return null;}
     return this.tileManager.spawnEntity(options);
   }
 
@@ -409,7 +409,7 @@ export class EcosystemSimulator {
    * @param {number} count - Number of entities to spawn
    */
   spawnRandomEntities(count = 10) {
-    if (!this.isInitialized) return;
+    if (!this.isInitialized) {return;}
 
     // Spawn 60% plants, 30% herbivores, 10% carnivores
     const plantCount = Math.floor(count * 0.6);

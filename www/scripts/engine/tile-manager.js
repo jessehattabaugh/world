@@ -175,7 +175,7 @@ export class TileManager {
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           // Skip the tile itself
-          if (dx === 0 && dy === 0) continue;
+          if (dx === 0 && dy === 0) {continue;}
 
           // Calculate neighbor coordinates
           const nx = tile.x + dx;
@@ -215,7 +215,7 @@ export class TileManager {
         const worker = new Worker('/scripts/engine/tile-worker.js', { type: 'module' });
 
         // Set up message handler
-        worker.onmessage = (event) => this.handleWorkerMessage(worker, event);
+        worker.onmessage = (event) => {return this.handleWorkerMessage(worker, event)};
 
         // Handle errors
         worker.onerror = (error) => {
@@ -225,7 +225,7 @@ export class TileManager {
         // Store worker
         this.workers.push({
           id: i,
-          worker: worker,
+          worker,
           assignedTiles: [],
           busy: false,
           lastMessage: Date.now()
@@ -270,7 +270,7 @@ export class TileManager {
             top: tile.top,
             width: tile.width,
             height: tile.height,
-            neighborIds: tile.neighborTiles.map(n => n.id)
+            neighborIds: tile.neighborTiles.map(n => {return n.id})
           },
           canvas: transferableCanvas
         }, [transferableCanvas]);
@@ -290,7 +290,7 @@ export class TileManager {
             top: tile.top,
             width: tile.width,
             height: tile.height,
-            neighborIds: tile.neighborTiles.map(n => n.id)
+            neighborIds: tile.neighborTiles.map(n => {return n.id})
           }
         });
       }
@@ -307,7 +307,7 @@ export class TileManager {
    * @private
    */
   async initializeShaders() {
-    if (!this.features.webGPU) return;
+    if (!this.features.webGPU) {return;}
 
     try {
       console.debug('🌍 Loading WebGPU shaders...');
@@ -363,8 +363,8 @@ export class TileManager {
 
       case 'workerStatus':
         // Update worker status (e.g., WebGPU initialization)
-        const workerId = data.workerId;
-        const workerInfo = this.workers.find(w => w.id === workerId);
+        const {workerId} = data;
+        const workerInfo = this.workers.find(w => {return w.id === workerId});
         if (workerInfo) {
           workerInfo.lastMessage = Date.now();
           if (data.status === 'gpu-ready') {
@@ -388,7 +388,7 @@ export class TileManager {
    */
   updateTileData(tileId, data) {
     const tile = this.tiles.get(tileId);
-    if (!tile) return;
+    if (!tile) {return;}
 
     // Update entities
     if (data.entities) {
@@ -530,7 +530,7 @@ export class TileManager {
    */
   getStats() {
     let totalEntities = 0;
-    let speciesCounts = [0, 0, 0]; // plants, herbivores, carnivores
+    const speciesCounts = [0, 0, 0]; // plants, herbivores, carnivores
 
     for (const [id, tile] of this.tiles) {
       totalEntities += tile.entities.length;

@@ -27,16 +27,16 @@ global.fetch = async (url) => {
 // Expose a utility to create mock WebGPU device for testing
 global.createMockWebGPUDevice = () => {
   return {
-    createBuffer: () => ({
+    createBuffer: () => {return {
       destroy: () => {},
       label: 'Mock buffer'
-    }),
-    createShaderModule: () => ({
+    }},
+    createShaderModule: () => {return {
       label: 'Mock shader module'
-    }),
-    createPipeline: async () => ({
+    }},
+    createPipeline: async () => {return {
       label: 'Mock pipeline'
-    }),
+    }},
     queue: {
       writeBuffer: () => {}
     },

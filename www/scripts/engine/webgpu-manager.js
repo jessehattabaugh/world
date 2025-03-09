@@ -110,7 +110,7 @@ export class WebGPUManager {
 
     // Set size from data or explicit size
     if (options.data) {
-      const data = options.data;
+      const {data} = options;
       bufferDescriptor.size = data.byteLength;
 
       // Create buffer
@@ -183,7 +183,7 @@ export class WebGPUManager {
       layout: 'auto',
       compute: {
         module: computeShader,
-        entryPoint: entryPoint
+        entryPoint
       }
     });
   }

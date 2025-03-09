@@ -290,7 +290,7 @@ class JessesWorldSimulator {
         // Store the worker
         this.workers.push({
           id: i,
-          worker: worker,
+          worker,
           assignedTiles: [], // Will contain references to assigned tiles
           busy: false,
           lastMessage: 0
@@ -336,7 +336,7 @@ class JessesWorldSimulator {
             top: tile.top,
             width: tile.width,
             height: tile.height,
-            neighborIds: tile.neighborTiles.map((/** @type {any} */ n) => n.id)
+            neighborIds: tile.neighborTiles.map((/** @type {any} */ n) => {return n.id})
           },
           // Transfer the canvas
           canvas: transferableCanvas
@@ -357,7 +357,7 @@ class JessesWorldSimulator {
             top: tile.top,
             width: tile.width,
             height: tile.height,
-            neighborIds: tile.neighborTiles.map((/** @type {any} */ n) => n.id)
+            neighborIds: tile.neighborTiles.map((/** @type {any} */ n) => {return n.id})
           }
         });
       }
@@ -378,7 +378,7 @@ class JessesWorldSimulator {
     switch (type) {
       case 'tileReady': {
         // Mark the tile as ready for rendering
-        const tile = this.tiles.find((/** @type {any} */ t) => t.id === tileId);
+        const tile = this.tiles.find((/** @type {any} */ t) => {return t.id === tileId});
         if (tile) {
           tile.ready = true;
           console.debug(`🌱 Tile ${tileId} ready`);
@@ -394,7 +394,7 @@ class JessesWorldSimulator {
 
       case 'workerStatus': {
         // Update status of the worker
-        const workerInfo = this.workers.find((/** @type {any} */ w) => w.worker === worker);
+        const workerInfo = this.workers.find((/** @type {any} */ w) => {return w.worker === worker});
         if (workerInfo) {
           workerInfo.busy = data.busy;
           workerInfo.lastMessage = Date.now();
@@ -415,7 +415,7 @@ class JessesWorldSimulator {
    * @private
    */
   updateTileData(tileId, data) {
-    const tile = this.tiles.find((/** @type {any} */ t) => t.id === tileId);
+    const tile = this.tiles.find((/** @type {any} */ t) => {return t.id === tileId});
     if (!tile) { return; }
 
     // Update entity data for this tile
@@ -601,7 +601,7 @@ class JessesWorldSimulator {
     const tileY = Math.floor(y / this.tileSize);
 
     // Find the tile that contains this position
-    const tile = this.tiles.find(t => t.x === tileX && t.y === tileY);
+    const tile = this.tiles.find(t => {return t.x === tileX && t.y === tileY});
 
     if (tile && tile.worker) {
       // Send message to the worker to spawn a lifeform in this tile
