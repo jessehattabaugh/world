@@ -36,8 +36,11 @@ export default defineConfig({
 		['list', { printSteps: true }]
 	],
 
-	// Group test files by page
-	testMatch: '**/tests/pages/**/*.test.js',
+	// Updated to include ecosystem tests
+	testMatch: [
+		'**/tests/pages/**/*.test.js',
+		'**/tests/ecosystem/**/*.test.js',
+	],
 
 	// Configure the flat snapshot directory
 	snapshotDir: './snapshots',

@@ -1,14 +1,9 @@
 // Entity Rendering Vertex/Fragment Shader
 // This shader handles rendering entities in the ecosystem
 
-struct Entity {
-  position: vec2f,  // x, y position
-  velocity: vec2f,  // velocity vector
-  energy: f32,      // current energy level
-  species: u32,     // species identifier
-  size: f32,        // entity size
-  padding: f32      // padding for alignment
-}
+// Include common utility functions and data structures
+#include "common/entity-types.wgsl"
+#include "common/math.wgsl"
 
 // Viewport uniform containing camera/viewport info
 struct Viewport {
@@ -69,8 +64,9 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   let radius = entity.size;
   let scaled_pos = in.position * radius;
 
-  // Transform vertex position
-  let world_pos = vec4f(entity.position.x + scaled_pos.x, entity.position.y + scaled_pos.y, 0.0, 1.0);
+  // Transform vertex position using math utilities
+  let rotated_pos = rotate2D(scaled_pos, dirToAngle(entity.velocity) * 0.5);
+  let world_pos = vec4f(entity.position.x + rotated_pos.x, entity.position.y + rotated_pos.y, 0.0, 1.0);
   out.position = viewport.projMatrix * viewport.viewMatrix * world_pos;
 
   // Pass color, energy and UV coordinates to fragment shader
@@ -87,11 +83,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   // Calculate distance from center for circle rendering
   let dist = length(in.uv);
 
-  // Create a smooth circle
-  let circle = 1.0 - smoothstep(0.8, 1.0, dist);
+  // Create a smooth circle using our math utilities
+  let circle = 1.0 - smoothstepf(0.8, 1.0, dist);
 
   // Energy factor affects brightness
-  let energy_factor = clamp(in.energy / 100.0, 0.2, 1.0);
+  let energy_factor = clampf(in.energy / 100.0, 0.2, 1.0);
 
   // Apply energy to brightness
   let final_color = in.color * energy_factor;
