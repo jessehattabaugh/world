@@ -1,0 +1,100 @@
+/**
+ * Ecosystem Dark Theme - Dark mode styling for PixelBiome WebGPU Ecosystem Simulator
+ */
+
+.dark-mode .ecosystem-theme {
+  --eco-primary: #1a5936;
+  --eco-secondary: #0d2b1c;
+  --eco-accent: #4ac158;
+  --eco-dark: #050f09;
+  --eco-light: #e0f5e3;
+
+  /* Gradients updated for dark mode */
+  --eco-gradient-primary: linear-gradient(135deg, var(--eco-primary), #091910);
+  --eco-gradient-accent: linear-gradient(135deg, var(--eco-accent), #1a4d2e);
+
+  /* Text */
+  --eco-text-primary: var(--eco-light);
+  --eco-text-secondary: rgba(224, 245, 227, 0.75);
+
+  /* UI Elements */
+  --eco-button-bg: #12472a;
+  --eco-button-hover: var(--eco-accent);
+  --eco-card-bg: rgba(5, 15, 9, 0.9);
+  --eco-border: 1px solid rgba(74, 193, 88, 0.2);
+
+  /* Effects */
+  --eco-glow: 0 0 10px rgba(74, 193, 88, 0.5);
+}
+
+/* Darker background for dark mode */
+.dark-mode .ecosystem-theme {
+  background-color: #030906;
+}
+
+/* Header darker background */
+.dark-mode .ecosystem-theme .animated-header {
+  background-color: rgba(5, 15, 9, 0.95);
+  border-bottom: var(--eco-border);
+}
+
+/* Feature items with darker background */
+.dark-mode .ecosystem-theme .feature-item {
+  background-color: rgba(20, 60, 40, 0.15);
+}
+
+/* Canvas with darker border */
+.dark-mode .ecosystem-theme .preview-canvas {
+  border-color: rgba(74, 193, 88, 0.2);
+  background-color: #050f09;
+}
+
+/* Buttons with adjusted opacity */
+.dark-mode .ecosystem-theme .eco-button {
+  background-color: var(--eco-button-bg);
+  box-shadow: 0 0 8px rgba(18, 71, 42, 0.7);
+}
+
+/* Footer with darker background */
+.dark-mode .ecosystem-theme .modern-footer {
+  background-color: rgba(5, 15, 9, 0.95);
+}
+
+/* Dialog with darker background */
+.dark-mode .ecosystem-theme .feature-warning {
+  background-color: #050f09;
+  border-color: rgba(74, 193, 88, 0.2);
+}
+
+/* Reduced glow effects in dark mode to prevent eye strain */
+.dark-mode .ecosystem-theme .glow-text {
+  text-shadow: 0 0 5px rgba(74, 193, 88, 0.4);
+}
+
+/* Soften accent colors for better dark mode contrast */
+.dark-mode .ecosystem-theme .tagline,
+.dark-mode .ecosystem-theme .feature-item h3,
+.dark-mode .ecosystem-theme .card h3,
+.dark-mode .ecosystem-theme .footer-title,
+.dark-mode .ecosystem-theme .tech-name {
+  color: #5ecf70;
+}
+
+/* Handle focus states properly in dark mode */
+.dark-mode .ecosystem-theme .nav-effects a:focus,
+.dark-mode .ecosystem-theme .footer-links a:focus,
+.dark-mode .ecosystem-theme .btn-shine:focus {
+  outline: 2px solid #4ac158;
+  outline-offset: 2px;
+}
+
+/* Reduce motion preference adjustments for dark mode */
+@media (prefers-reduced-motion: reduce) {
+  .dark-mode .ecosystem-theme .glow-text {
+    text-shadow: none;
+  }
+
+  .dark-mode .ecosystem-theme .eco-button:hover {
+    box-shadow: none;
+  }
+}

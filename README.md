@@ -6,6 +6,22 @@
 
 Create a visually engaging, highly performant 2D ecosystem simulation running entirely in-browser. The simulator leverages the power of WebGPU shaders (WGSL) for parallelized lifeform interactions, Web Workers and OffscreenCanvas for distributed rendering, and Service Workers for state caching and persistence. Players can interactively manage the ecosystem, influencing evolution and ecological balance in a sandbox or scenario-driven environment. The project prioritizes maintainability, scalability, and correctness using Test-Driven Development (TDD) via Playwright.
 
+Our vision is to educate users on complex ecological concepts through interactive simulation, making principles of evolution, genetic adaptation, and ecosystem dynamics accessible to everyone. By visualizing these concepts in real-time, PixelBiome serves as both an educational tool and an engaging experience that demonstrates the capabilities of modern web technologies.
+
+## Features
+
+- 🧬 Real-time ecosystem simulation with genetic algorithms
+- 🌍 Interactive, tile-based world rendering with WebGPU
+- 📊 Data visualization dashboard with real-time statistics
+- 🧠 Neural networks for lifeform decision making
+- 🔄 Save/load ecosystem state with IndexedDB
+- 🎮 Multiple simulation modes and tools
+- 🖱️ Advanced camera controls (pan, zoom, rotate)
+- 🌓 Dark/light theme support with auto detection
+- 📱 Fully responsive design
+- 🔒 Enhanced security headers
+- ♿ Accessibility features including prefers-reduced-motion support
+
 ### Project Goals
 
 - **WebGPU Compute & Rendering**: Use WebGPU and WGSL shaders extensively for high-performance compute tasks such as lifeform logic, genetics, and interactions, as well as rendering ecosystem visuals.
@@ -92,19 +108,30 @@ This project will demonstrate the power of modern web APIs (WebGPU, Web Workers,
 - We use Web Components for DOM interactions
 - We leverage Service Workers for offline capabilities
 
-## Features
+### Project Rules & Guidelines
 
-- 🧬 Real-time ecosystem simulation with genetic algorithms
-- 🌍 Interactive, tile-based world rendering with WebGPU
-- 📊 Data visualization dashboard with real-time statistics
-- 🧠 Neural networks for lifeform decision making
-- 🔄 Save/load ecosystem state with IndexedDB
-- 🎮 Multiple simulation modes and tools
-- 🖱️ Advanced camera controls (pan, zoom, rotate)
-- 🌓 Dark/light theme support with auto detection
-- 📱 Fully responsive design
-- 🔒 Enhanced security headers
-- ♿ Accessibility features including prefers-reduced-motion support
+#### Development Philosophy
+- **Progressive Enhancement**: Core functionality works without advanced features, enhanced experience with WebGPU
+- **Performance First**: Optimize critical paths and minimize main thread blocking
+- **Accessibility Matters**: Support keyboard navigation, screen readers, and reduced motion preferences
+- **Mobile Consideration**: Design for touch interfaces alongside desktop interactions
+- **Testing Always**: Every feature must include appropriate tests (unit, visual, performance)
+
+#### Code Standards
+- **Modern JavaScript**: Use ES Modules, async/await, and modern DOM APIs
+- **Clean CSS**: Follow BEM methodology with custom properties for theming
+- **Semantic HTML**: Prioritize proper HTML elements and ARIA attributes
+- **Documentation**: All components, functions, and modules must be documented with JSDoc
+
+#### Browser Support
+- **Primary Targets**: Chrome 113+, Edge 113+, Safari 17+ (future release with WebGPU)
+- **Fallback Experience**: Provide graceful degradation for browsers without WebGPU
+
+#### Contribution Guidelines
+- **Feature Branches**: All new features developed in separate branches
+- **Pull Requests**: All changes require PR review before merging
+- **Testing Requirements**: PR must pass all automated tests
+- **Performance Budget**: New features must not regress performance metrics beyond thresholds
 
 ## Setup
 

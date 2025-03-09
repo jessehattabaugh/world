@@ -1,21 +1,71 @@
 /**
  * PixelBiome Ecosystem Simulator
  * A WebGPU-powered 2D ecosystem simulation
+ *
+ * @module PixelBiomeSimulator
+ * @description A WebGPU-powered ecosystem simulation that can be integrated into any webpage.
+ *
+ * Usage:
+ * 1. Import the module: import { PixelBiomeSimulator } from './scripts/engine/simulator.js';
+ * 2. Create a container element: <div id="simulator-container"></div>
+ * 3. Initialize the simulator: const simulator = new PixelBiomeSimulator('simulator-container');
+ * 4. Control the simulation:
+ *    - simulator.startSimulation() - Start the simulation loop
+ *    - simulator.stopSimulation() - Pause the simulation
+ *    - simulator.toggleSimulation() - Toggle between running/paused states
+ *    - simulator.spawnLifeform() - Add a random lifeform to the simulation
+ *    - simulator.resetSimulation() - Clear all lifeforms and resources
+ *
+ * Advanced configuration is available through the constructor's options parameter:
+ *
+ * ```javascript
+ * const simulator = new PixelBiomeSimulator('container-id', {
+ *   width: 1024,             // Canvas width in pixels (default: 800)
+ *   height: 768,             // Canvas height in pixels (default: 600)
+ *   autoStart: true,         // Start simulation automatically (default: false)
+ *   showStats: true,         // Show performance stats (default: false)
+ *   initialLifeforms: 10,    // Number of lifeforms to create at start (default: 0)
+ * });
+ * ```
+ *
+ * @example
+ * // Basic initialization
+ * document.addEventListener('DOMContentLoaded', () => {
+ *   const simulator = new PixelBiomeSimulator('simulator-preview-canvas');
+ *
+ *   // Add UI controls
+ *   document.getElementById('start-button').addEventListener('click', simulator.startSimulation);
+ *   document.getElementById('stop-button').addEventListener('click', simulator.stopSimulation);
+ *   document.getElementById('spawn-button').addEventListener('click', simulator.spawnLifeform);
+ * });
  */
 
 class PixelBiomeSimulator {
-  constructor(canvasId = 'simulator-preview-canvas') {
+  /**
+   * Creates a new ecosystem simulator instance
+   * @param {string} canvasId - ID of the container element where the canvas should be placed
+   * @param {Object} options - Configuration options
+   * @param {number} [options.width=800] - Width of the simulation in pixels
+   * @param {number} [options.height=600] - Height of the simulation in pixels
+   * @param {boolean} [options.autoStart=false] - Whether to start the simulation immediately
+   * @param {boolean} [options.showStats=false] - Whether to show performance statistics
+   * @param {number} [options.initialLifeforms=0] - Number of random lifeforms to create at start
+   */
+  constructor(canvasId = 'simulator-preview-canvas', options = {}) {
     this.canvasId = canvasId;
     this.isInitialized = false;
     this.isRunning = false;
     this.device = null;
     this.canvas = null;
     this.context = null;
-    this.width = 800;
-    this.height = 600;
+    this.width = options.width || 800;
+    this.height = options.height || 600;
     this.lifeforms = [];
     this.resources = [];
     this.frameCount = 0;
+    this.showStats = options.showStats || false;
+    this.autoStart = options.autoStart || false;
+    this.initialLifeforms = options.initialLifeforms || 0;
 
     // Bind methods
     this.initialize = this.initialize.bind(this);

@@ -1,295 +1,232 @@
 /**
  * Theme Toggle Web Component
- * A toggle switch for dark/light mode with system preference detection
+ *
+ * A custom element that toggles between light and dark themes.
+ * - Syncs with system preferences by default
+ * - Remembers user preference in localStorage
+ * - Supports keyboard navigation and ARIA attributes
+ *
+ * @example
+ * <theme-toggle role="switch" aria-label="Toggle theme" class="fancy-toggle"></theme-toggle>
  */
-export class ThemeToggle extends HTMLElement {
-	// Key for storing preference in localStorage
-	#storageKey = 'theme-preference';
 
-	// Available themes
-	#themes = {
-		light: 'light',
-		dark: 'dark',
-		system: 'system',
-	};
+class ThemeToggle extends HTMLElement {
+  static get observedAttributes() {
+    return ['role', 'aria-label'];
+  }
 
-	// Current theme
-	#currentTheme = this.#themes.system;
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
 
-	// Media query for system preference
-	#systemPreference = window.matchMedia('(prefers-color-scheme: dark)');
+    // Create the toggle structure
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          --toggle-width: 60px;
+          --toggle-height: 30px;
+          --toggle-padding: 4px;
+          --toggle-border-radius: 30px;
+          --toggle-handle-size: calc(var(--toggle-height) - 2 * var(--toggle-padding));
+          --toggle-bg-light: #e8f7e9;
+          --toggle-bg-dark: #0a1e12;
+          --toggle-border-light: rgba(127, 224, 132, 0.5);
+          --toggle-border-dark: rgba(127, 224, 132, 0.2);
+          --transition-speed: 0.3s;
+        }
 
-	constructor() {
-		super();
-		this.attachShadow({ mode: 'open' });
+        .toggle {
+          position: relative;
+          width: var(--toggle-width);
+          height: var(--toggle-height);
+          background-color: var(--toggle-bg-dark);
+          border-radius: var(--toggle-border-radius);
+          border: 1px solid var(--toggle-border-dark);
+          cursor: pointer;
+          transition: background-color var(--transition-speed);
+          display: flex;
+          align-items: center;
+          padding: 0 var(--toggle-padding);
+        }
 
-		// Load saved theme preference
-		this.#loadThemePreference();
+        .toggle[aria-checked="true"] {
+          background-color: var(--toggle-bg-light);
+          border-color: var(--toggle-border-light);
+        }
 
-		// Bind methods
-		this.#handleToggleClick = this.#handleToggleClick.bind(this);
-		this.#handleSystemPreferenceChange = this.#handleSystemPreferenceChange.bind(this);
-	}
+        .toggle:focus-visible {
+          outline: 2px solid #7fe084;
+          outline-offset: 2px;
+        }
 
-	connectedCallback() {
-		this.render();
+        .handle {
+          position: absolute;
+          left: var(--toggle-padding);
+          width: var(--toggle-handle-size);
+          height: var(--toggle-handle-size);
+          border-radius: 50%;
+          background-color: #7fe084;
+          transition: transform var(--transition-speed);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
 
-		// Apply the theme immediately
-		this.#applyTheme();
+        .toggle[aria-checked="true"] .handle {
+          transform: translateX(calc(var(--toggle-width) - var(--toggle-handle-size) - 2 * var(--toggle-padding)));
+        }
 
-		// Add event listener for system preference changes
-		this.#systemPreference.addEventListener('change', this.#handleSystemPreferenceChange);
+        .icon {
+          display: block;
+          width: 16px;
+          height: 16px;
+          color: #0a1e12;
+        }
 
-		// Add event listener for toggle
-		this.shadowRoot.querySelector('button').addEventListener('click', this.#handleToggleClick);
-	}
+        .sun-icon {
+          display: none;
+        }
 
-	disconnectedCallback() {
-		this.shadowRoot
-			.querySelector('button')
-			?.removeEventListener('click', this.#handleToggleClick);
-		this.#systemPreference.removeEventListener('change', this.#handleSystemPreferenceChange);
-	}
+        .moon-icon {
+          display: block;
+        }
 
-	/**
-	 * Load theme preference from localStorage
-	 * @private
-	 */
-	#loadThemePreference() {
-		try {
-			const savedTheme = localStorage.getItem(this.#storageKey);
-			if (savedTheme && Object.values(this.#themes).includes(savedTheme)) {
-				this.#currentTheme = savedTheme;
-			}
-		} catch (e) {
-			console.warn('Failed to load theme preference', e);
-		}
-	}
+        .toggle[aria-checked="true"] .sun-icon {
+          display: block;
+        }
 
-	/**
-	 * Save theme preference to localStorage
-	 * @private
-	 * @param {string} theme - The theme to save
-	 */
-	#saveThemePreference(theme) {
-		try {
-			localStorage.setItem(this.#storageKey, theme);
-		} catch (e) {
-			console.warn('Failed to save theme preference', e);
-		}
-	}
+        .toggle[aria-checked="true"] .moon-icon {
+          display: none;
+        }
 
-	/**
-	 * Handle toggle button click
-	 * @private
-	 */
-	#handleToggleClick() {
-		switch (this.#currentTheme) {
-			case this.#themes.light:
-				this.#setTheme(this.#themes.dark);
-				break;
-			case this.#themes.dark:
-				this.#setTheme(this.#themes.system);
-				break;
-			case this.#themes.system:
-			default:
-				this.#setTheme(this.#themes.light);
-				break;
-		}
-	}
+        @media (prefers-reduced-motion: reduce) {
+          .toggle, .handle {
+            transition: none;
+          }
+        }
+      </style>
 
-	/**
-	 * Handle system preference change
-	 * @private
-	 */
-	#handleSystemPreferenceChange() {
-		if (this.#currentTheme === this.#themes.system) {
-			this.#applyTheme();
-			this.#updateToggleState();
-		}
-	}
-
-	/**
-	 * Set the theme
-	 * @private
-	 * @param {string} theme - The theme to set
-	 */
-	#setTheme(theme) {
-		this.#currentTheme = theme;
-		this.#saveThemePreference(theme);
-		this.#applyTheme();
-		this.#updateToggleState();
-
-		// Dispatch event
-		this.dispatchEvent(
-			new CustomEvent('themeChange', {
-				detail: {
-					theme: this.#currentTheme,
-					isDark: this.#isDarkThemeActive(),
-				},
-				bubbles: true,
-			}),
-		);
-	}
-
-	/**
-	 * Apply the current theme to the document
-	 * @private
-	 */
-	#applyTheme() {
-		const isDark = this.#isDarkThemeActive();
-
-		document.documentElement.classList.toggle('dark-mode', isDark);
-		document.documentElement.classList.toggle('light-mode', !isDark);
-
-		// Also update meta theme-color for mobile browsers
-		const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-		if (themeColorMeta) {
-			const darkThemeColor =
-				getComputedStyle(document.documentElement)
-					.getPropertyValue('--color-background')
-					.trim() || '#121212';
-			const lightThemeColor = '#ffffff';
-			themeColorMeta.setAttribute('content', isDark ? darkThemeColor : lightThemeColor);
-		}
-	}
-
-	/**
-	 * Check if dark theme is currently active
-	 * @private
-	 * @returns {boolean} Whether dark theme is active
-	 */
-	#isDarkThemeActive() {
-		if (this.#currentTheme === this.#themes.dark) {
-			return true;
-		}
-		if (this.#currentTheme === this.#themes.light) {
-			return false;
-		}
-		// System preference
-		return this.#systemPreference.matches;
-	}
-
-	/**
-	 * Update the toggle button state based on current theme
-	 * @private
-	 */
-	#updateToggleState() {
-		const toggle = this.shadowRoot.querySelector('button');
-		if (!toggle) {
-			return;
-		}
-
-		const icon = toggle.querySelector('.icon');
-		const label = toggle.querySelector('.label');
-
-		// Update ARIA attributes for accessibility
-		toggle.setAttribute('aria-pressed', this.#isDarkThemeActive() ? 'true' : 'false');
-
-		// Important: Make sure the button has proper ARIA role for screenreaders
-		toggle.setAttribute('role', 'switch');
-		toggle.setAttribute('aria-label', 'Toggle theme');
-
-		// Update icon and label based on current state
-		let iconSvg = '';
-		let labelText = '';
-
-		switch (this.#currentTheme) {
-			case this.#themes.light:
-				iconSvg = this.#icons.light;
-				labelText = 'Light';
-				break;
-			case this.#themes.dark:
-				iconSvg = this.#icons.dark;
-				labelText = 'Dark';
-				break;
-			case this.#themes.system:
-				iconSvg = this.#systemPreference.matches ? this.#icons.dark : this.#icons.light;
-				labelText = 'Auto';
-				break;
-		}
-
-		icon.innerHTML = iconSvg;
-		label.textContent = labelText;
-	}
-
-	/**
-	 * SVG icons for the toggle button
-	 * @private
-	 */
-	#icons = {
-		light: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="5"></circle>
-      <line x1="12" y1="1" x2="12" y2="3"></line>
-      <line x1="12" y1="21" x2="12" y2="23"></line>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-      <line x1="1" y1="12" x2="3" y2="12"></line>
-      <line x1="21" y1="12" x2="23" y2="12"></line>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-    </svg>`,
-		dark: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-    </svg>`,
-		system: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-      <line x1="8" y1="21" x2="16" y2="21"></line>
-      <line x1="12" y1="17" x2="12" y2="21"></line>
-    </svg>`,
-	};
-
-	/**
-	 * Render the component
-	 */
-	render() {
-		this.shadowRoot.innerHTML = `
-      <link rel="stylesheet" href="/components/theme-toggle.css">
-
-      <button
-        aria-label="Toggle theme"
-        title="Toggle between light, dark, and system theme"
-        role="switch"
-        aria-pressed="false"
-      >
-        <span class="icon" aria-hidden="true"></span>
-        <span class="label"></span>
-      </button>
+      <div class="toggle" tabindex="0" role="switch" aria-checked="false">
+        <span class="handle">
+          <svg class="icon sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2a7 7 0 1 1 0-14 7 7 0 0 1 0 14zm0-18a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0V2a1 1 0 0 1 1-1zm0 18a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0v-2a1 1 0 0 1 1-1zM4.22 5.64a1 1 0 0 1 1.41 0l1.42 1.42a1 1 0 0 1-1.42 1.41L4.22 7.06a1 1 0 0 1 0-1.42zm12.73 12.73a1 1 0 0 1 1.41 0l1.42 1.42a1 1 0 0 1-1.42 1.41l-1.41-1.42a1 1 0 0 1 0-1.41zM2 13h2a1 1 0 0 1 0 2H2a1 1 0 0 1 0-2zm18 0h2a1 1 0 0 1 0 2h-2a1 1 0 0 1 0-2zM4.22 18.36l1.42-1.42a1 1 0 0 1 1.41 1.42l-1.42 1.41a1 1 0 0 1-1.41-1.41zm12.73-12.73l1.42-1.42a1 1 0 1 1 1.41 1.42l-1.42 1.41a1 1 0 1 1-1.41-1.41z"/>
+          </svg>
+          <svg class="icon moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 22c5.523 0 10-4.477 10-10 0-.463-.207-.897-.54-1.192-.442-.39-1.068-.367-1.494.06-.853.854-2.006 1.332-3.206 1.332-2.485 0-4.5-2.015-4.5-4.5 0-1.2.478-2.354 1.332-3.207.427-.426.45-1.052.06-1.494C13.358 2.691 12.95 2.5 12.5 2.5 7.977 2.5 4 6.477 4 11c0 5.523 4.477 10 10 10z"/>
+          </svg>
+        </span>
+      </div>
     `;
 
-		// Update toggle state after rendering
-		this.#updateToggleState();
-	}
+    // Access elements
+    this.toggle = this.shadowRoot.querySelector('.toggle');
 
-	/**
-	 * Get the current theme
-	 * @returns {string} The current theme
-	 */
-	getTheme() {
-		return this.#currentTheme;
-	}
+    // Bind event handlers
+    this.handleClick = this.handleClick.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+  }
 
-	/**
-	 * Check if dark mode is active
-	 * @returns {boolean} Whether dark mode is active
-	 */
-	isDarkMode() {
-		return this.#isDarkThemeActive();
-	}
+  connectedCallback() {
+    // Set up event listeners
+    this.toggle.addEventListener('click', this.handleClick);
+    this.toggle.addEventListener('keydown', this.handleKeyDown);
 
-	/**
-	 * Set the theme programmatically
-	 * @param {string} theme - 'light', 'dark', or 'system'
-	 */
-	setTheme(theme) {
-		if (Object.values(this.#themes).includes(theme)) {
-			this.#setTheme(theme);
-		} else {
-			console.warn(
-				`Invalid theme: ${theme}. Must be one of: ${Object.values(this.#themes).join(
-					', ',
-				)}`,
-			);
-		}
-	}
+    // Apply ARIA attributes from host element
+    if (this.hasAttribute('role')) {
+      this.toggle.setAttribute('role', this.getAttribute('role'));
+    }
+
+    if (this.hasAttribute('aria-label')) {
+      this.toggle.setAttribute('aria-label', this.getAttribute('aria-label'));
+    }
+
+    // Initialize theme based on stored preference or system preference
+    this.initializeTheme();
+  }
+
+  disconnectedCallback() {
+    // Clean up event listeners
+    this.toggle.removeEventListener('click', this.handleClick);
+    this.toggle.removeEventListener('keydown', this.handleKeyDown);
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (this.toggle) {
+      if (name === 'role' || name === 'aria-label') {
+        this.toggle.setAttribute(name, newValue);
+      }
+    }
+  }
+
+  initializeTheme() {
+    // Check local storage for user preference
+    const storedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    // Set theme based on stored preference or system preference
+    if (storedTheme === 'dark' || (storedTheme === null && prefersDark)) {
+      this.setDarkTheme();
+    } else {
+      this.setLightTheme();
+    }
+
+    // Listen for system preference changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      // Only change if user hasn't explicitly set a preference
+      if (!localStorage.getItem('theme')) {
+        if (e.matches) {
+          this.setDarkTheme();
+        } else {
+          this.setLightTheme();
+        }
+      }
+    });
+  }
+
+  handleClick() {
+    if (this.toggle.getAttribute('aria-checked') === 'true') {
+      this.setLightTheme();
+    } else {
+      this.setDarkTheme();
+    }
+  }
+
+  handleKeyDown(event) {
+    // Toggle on Space or Enter
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      this.handleClick();
+    }
+  }
+
+  setDarkTheme() {
+    document.documentElement.classList.add('dark-mode');
+    this.toggle.setAttribute('aria-checked', 'true');
+    localStorage.setItem('theme', 'dark');
+
+    // Dispatch event for other components
+    window.dispatchEvent(new CustomEvent('themechange', {
+      detail: { theme: 'dark' }
+    }));
+
+    // Log for performance tracking
+    console.debug('🌱 Theme changed to dark 🌙 theme-toggle');
+  }
+
+  setLightTheme() {
+    document.documentElement.classList.remove('dark-mode');
+    this.toggle.setAttribute('aria-checked', 'false');
+    localStorage.setItem('theme', 'light');
+
+    // Dispatch event for other components
+    window.dispatchEvent(new CustomEvent('themechange', {
+      detail: { theme: 'light' }
+    }));
+
+    // Log for performance tracking
+    console.debug('🌱 Theme changed to light ☀️ theme-toggle');
+  }
 }
+
+// Define the custom element
+customElements.define('theme-toggle', ThemeToggle);
