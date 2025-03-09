@@ -1,7 +1,8 @@
+import { assertPerformanceBaseline, getBrowserPerformanceMetrics } from './performance-utils.js';
 import { test as base, expect } from '@playwright/test';
-import { injectAxe, checkA11y } from './accessibility-utils.js';
-import { getBrowserPerformanceMetrics, assertPerformanceBaseline } from './performance-utils.js';
+import { checkA11y, injectAxe } from './accessibility-utils.js';
 import { checkHeaders, testCSP } from './security-utils.js';
+
 import { mapTestUrl } from './url-mapping.js';
 import { safeVisualComparison } from './visual-utils.js';
 

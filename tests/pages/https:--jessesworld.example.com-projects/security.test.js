@@ -1,8 +1,8 @@
+import { checkForVulnerableLibraries, checkHeaders, testCSP } from '../../utils/security-utils.js';
 /**
  * Projects security tests
  */
-import { test, expect } from '@playwright/test';
-import { checkHeaders, testCSP, checkForVulnerableLibraries } from '../../utils/security-utils.js';
+import { expect, test } from '@playwright/test';
 
 const pageUrl = 'https://jessesworld.example.com/projects';
 

@@ -1,8 +1,8 @@
+import { assertPerformanceBaseline, getBrowserPerformanceMetrics } from '../../utils/performance-utils.js';
 /**
  * Contact performance tests
  */
-import { test, expect } from '@playwright/test';
-import { getBrowserPerformanceMetrics, assertPerformanceBaseline } from '../../utils/performance-utils.js';
+import { expect, test } from '@playwright/test';
 
 const pageUrl = 'https://jessesworld.example.com/contact';
 
