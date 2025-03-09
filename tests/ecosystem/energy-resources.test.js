@@ -9,9 +9,9 @@ import { expect, test } from '@playwright/test';
 test.describe('Energy and Resources - Milestone 2', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForSelector('#simulator-preview-canvas canvas', { 
-      state: 'attached', 
-      timeout: 10000 
+    await page.waitForSelector('#simulator-preview-canvas canvas', {
+      state: 'attached',
+      timeout: 10000
     });
   });
 
@@ -28,14 +28,14 @@ test.describe('Energy and Resources - Milestone 2', () => {
         });
 
         const initialEnergy = simulator.getLifeformState(lifeform.id).energy;
-        
+
         // Run simulation steps
         for (let i = 0; i < 10; i++) {
           await simulator.step();
         }
-        
+
         const finalState = simulator.getLifeformState(lifeform.id);
-        
+
         return {
           initialEnergy,
           finalEnergy: finalState.energy,
@@ -61,7 +61,7 @@ test.describe('Energy and Resources - Milestone 2', () => {
         });
 
         const initialState = simulator.getLifeformState(lifeform.id);
-        
+
         // Run simulation until energy depletes
         let steps = 0;
         let currentState;
@@ -97,9 +97,9 @@ test.describe('Energy and Resources - Milestone 2', () => {
           energy: 50,
           metabolism: 1.0
         });
-        
-        const food = simulator.spawnFood(120, 100, { 
-          energy: 20 
+
+        const food = simulator.spawnFood(120, 100, {
+          energy: 20
         });
 
         const initialState = {
@@ -144,8 +144,8 @@ test.describe('Energy and Resources - Milestone 2', () => {
         const resources = [];
         for (let i = 0; i < 5; i++) {
           resources.push(simulator.spawnFood(
-            100 + i * 50, 
-            100, 
+            100 + i * 50,
+            100,
             { energy: 10 }
           ));
         }
@@ -157,7 +157,7 @@ test.describe('Energy and Resources - Milestone 2', () => {
 
         // Check final state
         const finalCount = simulator.stats.resourceCount;
-        const originalResourcesExist = resources.some(r => 
+        const originalResourcesExist = resources.some(r =>
           simulator.getResourceState(r.id)
         );
         const newResourcesSpawned = finalCount > resources.length;
@@ -175,7 +175,7 @@ test.describe('Energy and Resources - Milestone 2', () => {
       expect(resourceResults.resourcesAdded).toBe(5);
       // Either original resources still exist or new ones have spawned
       expect(
-        resourceResults.originalResourcesExist || 
+        resourceResults.originalResourcesExist ||
         resourceResults.newResourcesSpawned
       ).toBe(true);
     });

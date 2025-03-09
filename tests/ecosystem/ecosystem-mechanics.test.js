@@ -10,9 +10,9 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // Wait for simulator initialization
-    await page.waitForSelector('#simulator-preview-canvas canvas', { 
-      state: 'attached', 
-      timeout: 10000 
+    await page.waitForSelector('#simulator-preview-canvas canvas', {
+      state: 'attached',
+      timeout: 10000
     });
   });
 
@@ -89,7 +89,7 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
         });
 
         const initialCount = simulator.stats.entityCount;
-        
+
         // Trigger reproduction
         const child = await simulator.reproduce(parent1.id, parent2.id);
         const childState = simulator.getLifeformState(child.id);
@@ -99,7 +99,7 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
         return {
           reproductionSucceeded: !!childState,
           populationIncreased: simulator.stats.entityCount > initialCount,
-          parentsLostEnergy: 
+          parentsLostEnergy:
             parent1State.energy < 100 &&
             parent2State.energy < 100,
           childInheritsType: childState.type === 'herbivore'
@@ -132,16 +132,16 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
         });
 
         const initialCount = simulator.stats.entityCount;
-        
+
         // Attempt reproduction
         try {
           await simulator.reproduce(predator.id, prey.id);
-          return { 
+          return {
             preventedReproduction: false,
             populationUnchanged: simulator.stats.entityCount === initialCount
           };
         } catch (e) {
-          return { 
+          return {
             preventedReproduction: true,
             populationUnchanged: simulator.stats.entityCount === initialCount
           };
@@ -197,14 +197,14 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
 
         return {
           // Check if at least some children have mutations
-          hasMutations: variations.some(v => 
-            v.speedDiff > 0 || 
-            v.senseDiff > 0 || 
+          hasMutations: variations.some(v =>
+            v.speedDiff > 0 ||
+            v.senseDiff > 0 ||
             v.metabolismDiff > 0 ||
             v.sizeDiff > 0
           ),
           // Verify mutations are within acceptable ranges
-          mutationsInRange: variations.every(v => 
+          mutationsInRange: variations.every(v =>
             v.speedDiff <= baseGenes.speed * 0.2 && // Max 20% mutation
             v.senseDiff <= baseGenes.senseRange * 0.2 &&
             v.metabolismDiff <= baseGenes.metabolism * 0.2 &&

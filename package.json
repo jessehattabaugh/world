@@ -36,7 +36,24 @@
     "test": "playwright test",
     "ui": "playwright test --ui",
     "update": "npm run shots && npm run accept-all",
-    "url": "BASE_URL=${TEST_URL} playwright test"
+    "url": "BASE_URL=${TEST_URL} playwright test",
+
+    // Performance monitoring and profiling
+    "profile:cpu": "node --prof bin/run-tests.js && node --prof-process isolate-*-v8.log > cpu-profile.txt",
+    "profile:heap": "node --expose-gc --trace-gc bin/run-tests.js > gc-trace.txt",
+    "profile:gpu": "playwright test tests/ecosystem/performance.test.js --trace=webgpu",
+    "monitor": "node bin/perf-monitor.js",
+    "benchmark": "node bin/benchmark-ecosystem.js",
+    "analyze:bundle": "esbuild --bundle www/scripts/main.js --outfile=dist/bundle.js --metafile=bundle-analysis.json && node bin/analyze-bundle.js",
+
+    // Development with performance monitoring
+    "dev:profile": "cross-env PROFILE=true npm run dev",
+    "start:profile": "cross-env PROFILE=true npm run start",
+
+    // Performance test suites
+    "test:perf": "playwright test tests/performance/",
+    "test:stress": "cross-env STRESS_TEST=true playwright test tests/stress/",
+    "test:memory": "node bin/memory-test.js"
   },
   "dependencies": {
     "commander": "^9.0.0"
@@ -54,7 +71,12 @@
     "npm-run-all": "^4.1.5",
     "rimraf": "latest",
     "serve": "latest",
-    "xml2js": "latest"
+    "xml2js": "latest",
+    "@esbuild/esbuild": "latest",
+    "cross-env": "latest",
+    "heap-snapshot-analyzer": "latest",
+    "microtime": "latest",
+    "v8-profiler-next": "latest"
   },
   "keywords": [],
   "author": "",

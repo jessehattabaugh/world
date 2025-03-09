@@ -1,287 +1,245 @@
 /**
- * Core Simulation Engine
- * 
- * This module implements the core simulation logic for the ecosystem,
- * handling entity behavior, genetics, and interactions through WebGPU.
+ * Core Simulation
+ * Manages the main simulation loop and entity state
  */
 
 import { ResourceManager } from './resource-manager.js';
-import { NeuralNetwork } from './neural-network.js';
+import { preprocessShader } from '../utils/wgsl-preprocessor.js';
 
 export class CoreSimulation {
-    /**
-     * Create a new simulation instance
-     * @param {WebGPUManager} gpuManager - WebGPU manager instance
-     */
     constructor(gpuManager) {
         this.gpuManager = gpuManager;
-        this.isInitialized = false;
-        
-        // Simulation state
-        this.entities = new Map();
-        this.nextEntityId = 0;
-        
-        // WebGPU resources
-        this.buffers = {
-            input: null,
-            output: null,
-            params: null,
-            neuralNets: null
-        };
-        
-        this.bindGroups = {
-            simulation: null
-        };
-        
-        // Simulation parameters
-        this.params = {
-            deltaTime: 0,
-            frameCount: 0,
-            worldWidth: 800,
-            worldHeight: 600,
-            plantGrowthRate: 1.0,
-            herbivoreSpeed: 2.0,
-            carnivoreSpeed: 3.0,
-            enableMutation: 1,
-            enableReproduction: 1,
-            randomSeed: Math.random() * 0xFFFFFFFF
-        };
-        
-        // Statistics
-        this.stats = {
-            entityCount: 0,
-            networkCount: 0
-        };
-
-        // Add ResourceManager
         this.resourceManager = new ResourceManager();
 
-        // Neural networks for entities
+        // Use Map for O(1) entity lookup
+        this.entities = new Map();
         this.networks = new Map();
+
+        // Stats tracking
+        this.stats = {
+            entityCount: 0,
+            networkCount: 0,
+            frameTime: 0
+        };
+
+        // Simulation parameters
+        this.params = {
+            frameCount: 0,
+            deltaTime: 0,
+            worldWidth: 800,
+            worldHeight: 600,
+            plantGrowthRate: 0.01,
+            herbivoreSpeed: 2.0,
+            carnivoreSpeed: 3.0,
+            enableMutation: true,
+            enableReproduction: true
+        };
+
+        // WebGPU resources
+        this.gpuResources = {
+            entityBuffer: null,
+            networkBuffer: null,
+            paramBuffer: null,
+            computePipeline: null
+        };
     }
 
-    /**
-     * Initialize the simulation
-     */
     async initialize() {
-        if (!this.gpuManager.initialized) {
-            throw new Error('WebGPU manager must be initialized first');
+        if (!this.gpuManager.isReady()) {
+            throw new Error('WebGPU not available');
         }
 
-        // Create initial buffers
-        const maxEntities = 1000;
-        const entityBufferSize = maxEntities * 48; // 48 bytes per entity
-        const networkBufferSize = maxEntities * 
-            (4 * 8 +      // Input->Hidden weights (4×8)
-             8 * 4 +      // Hidden->Output weights (8×4)
-             8 + 4) * 4;  // Biases (8 hidden + 4 output) * 4 bytes
+        // Load and preprocess compute shader
+        const shaderCode = await fetch('/scripts/shaders/neural-compute.wgsl')
+            .then(r => r.text());
 
-        // Create entity buffers
-        this.buffers.input = this.gpuManager.createBuffer({
-            label: 'Entity Input Buffer',
-            size: entityBufferSize,
+        const processedCode = await preprocessShader(shaderCode, {
+            defines: {
+                MAX_ENTITIES: '1000',
+                WORKGROUP_SIZE: '64'
+            }
+        });
+
+        // Create GPU buffers with proper alignment
+        this.gpuResources.entityBuffer = this.gpuManager.createBuffer({
+            size: 1000 * 48, // 48 bytes per entity
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
+        });
+
+        this.gpuResources.networkBuffer = this.gpuManager.createBuffer({
+            size: 1000 * 192, // 192 bytes per network
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
 
-        this.buffers.output = this.gpuManager.createBuffer({
-            label: 'Entity Output Buffer',
-            size: entityBufferSize,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
-        });
-
-        // Create neural network buffer
-        this.buffers.neuralNets = this.gpuManager.createBuffer({
-            label: 'Neural Network Buffer',
-            size: networkBufferSize,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-        });
-
-        // Create parameter buffer
-        this.buffers.params = this.gpuManager.createBuffer({
-            label: 'Simulation Params Buffer',
-            size: 48, // 12 x 4-byte values
+        this.gpuResources.paramBuffer = this.gpuManager.createBuffer({
+            size: 64, // 16 float params
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
 
-        // Create bind group with neural network buffer
-        this.bindGroups.simulation = this.gpuManager.createSimulationBindGroup(
-            this.buffers
-        );
+        // Create compute pipeline
+        this.gpuResources.computePipeline = await this.gpuManager.createComputePipeline({
+            code: processedCode,
+            entryPoint: 'main'
+        });
 
-        this.isInitialized = true;
+        return true;
     }
 
-    /**
-     * Spawn a new entity
-     * @param {Object} options - Entity options
-     */
+    update(deltaTime) {
+        const startTime = performance.now();
+        this.params.deltaTime = deltaTime;
+        this.params.frameCount++;
+
+        // Update GPU buffers
+        this.updateGPUBuffers();
+
+        // Dispatch compute shader
+        const encoder = this.gpuManager.device.createCommandEncoder();
+        const pass = encoder.beginComputePass();
+
+        pass.setPipeline(this.gpuResources.computePipeline);
+        pass.setBindGroup(0, this.gpuResources.bindGroup);
+
+        const workgroupCount = Math.ceil(this.entities.size / 64);
+        pass.dispatchWorkgroups(workgroupCount);
+        pass.end();
+
+        // Read back results
+        this.readBackResults(encoder);
+
+        // Submit GPU commands
+        this.gpuManager.device.queue.submit([encoder.finish()]);
+
+        // Update resources and stats
+        this.resourceManager.update(performance.now());
+        this.updateStats(startTime);
+    }
+
+    updateGPUBuffers() {
+        // Update entity buffer
+        const entityData = new Float32Array(this.entities.size * 12); // 48 bytes per entity
+        let offset = 0;
+
+        for (const entity of this.entities.values()) {
+            entityData.set([
+                entity.position[0], entity.position[1],
+                entity.velocity[0], entity.velocity[1],
+                entity.energy, entity.species,
+                entity.size, ...entity.genes
+            ], offset);
+            offset += 12;
+        }
+
+        this.gpuManager.device.queue.writeBuffer(
+            this.gpuResources.entityBuffer,
+            0,
+            entityData.buffer
+        );
+
+        // Update network buffer
+        const networkData = new Float32Array(this.networks.size * 48); // 192 bytes per network
+        offset = 0;
+
+        for (const network of this.networks.values()) {
+            networkData.set(network.toGPUFormat(), offset);
+            offset += 48;
+        }
+
+        this.gpuManager.device.queue.writeBuffer(
+            this.gpuResources.networkBuffer,
+            0,
+            networkData.buffer
+        );
+
+        // Update params buffer
+        const paramData = new Float32Array([
+            this.params.deltaTime,
+            this.params.frameCount,
+            this.params.worldWidth,
+            this.params.worldHeight,
+            this.params.plantGrowthRate,
+            this.params.herbivoreSpeed,
+            this.params.carnivoreSpeed,
+            this.params.enableMutation ? 1 : 0,
+            this.params.enableReproduction ? 1 : 0,
+            Math.random() * 0xFFFFFFFF, // Random seed
+            0, 0, 0, 0, 0, 0 // Padding for alignment
+        ]);
+
+        this.gpuManager.device.queue.writeBuffer(
+            this.gpuResources.paramBuffer,
+            0,
+            paramData.buffer
+        );
+    }
+
+    async readBackResults(encoder) {
+        // Create staging buffer for readback
+        const stagingBuffer = this.gpuManager.device.createBuffer({
+            size: this.entities.size * 48,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+        });
+
+        // Copy results to staging buffer
+        encoder.copyBufferToBuffer(
+            this.gpuResources.entityBuffer,
+            0,
+            stagingBuffer,
+            0,
+            this.entities.size * 48
+        );
+
+        // Read back results
+        await stagingBuffer.mapAsync(GPUMapMode.READ);
+        const entityData = new Float32Array(stagingBuffer.getMappedRange());
+
+        // Update entity states
+        let offset = 0;
+        for (const entity of this.entities.values()) {
+            entity.position[0] = entityData[offset];
+            entity.position[1] = entityData[offset + 1];
+            entity.velocity[0] = entityData[offset + 2];
+            entity.velocity[1] = entityData[offset + 3];
+            entity.energy = entityData[offset + 4];
+            offset += 12;
+        }
+
+        stagingBuffer.unmap();
+        stagingBuffer.destroy();
+    }
+
+    updateStats(startTime) {
+        const endTime = performance.now();
+        this.stats = {
+            entityCount: this.entities.size,
+            networkCount: this.networks.size,
+            frameTime: endTime - startTime
+        };
+    }
+
+    // Entity management methods
     spawnLifeform(options = {}) {
         const entity = {
-            id: this.nextEntityId++,
+            id: crypto.randomUUID(),
             position: new Float32Array([
                 options.x ?? Math.random() * this.params.worldWidth,
                 options.y ?? Math.random() * this.params.worldHeight
             ]),
             velocity: new Float32Array([0, 0]),
             energy: options.energy ?? 100,
-            species: options.species ?? 0,
+            species: options.species ?? 1,
             size: options.size ?? 1.0,
-            genes: new Float32Array([
-                options.speed ?? 1.0,
-                options.senseRange ?? 50,
-                options.metabolism ?? 1.0,
-                0.0  // Additional gene slot
+            genes: new Float32Array(options.genes ?? [
+                Math.random(), // Speed
+                Math.random(), // Sense range
+                Math.random(), // Metabolism
+                Math.random()  // Additional trait
             ]),
-            neural: this.nextEntityId // Using entity ID as neural network ID
+            neuralId: crypto.randomUUID()
         };
 
-        // Create neural network for entity
-        const network = new NeuralNetwork();
-        this.networks.set(entity.neural, network);
-        this.stats.networkCount = this.networks.size;
-
-        // Store entity
         this.entities.set(entity.id, entity);
-        this.stats.entityCount = this.entities.size;
-
         return entity;
-    }
-
-    /**
-     * Update simulation state
-     * @param {number} deltaTime - Time since last update
-     */
-    async update(deltaTime) {
-        if (!this.isInitialized) return;
-
-        this.params.deltaTime = deltaTime;
-        this.params.frameCount++;
-
-        // Update resources first
-        this.resourceManager.update(performance.now());
-
-        // Update simulation parameters buffer
-        this.gpuManager.device.queue.writeBuffer(
-            this.buffers.params,
-            0,
-            new Float32Array([
-                this.params.deltaTime,
-                this.params.frameCount,
-                this.params.worldWidth,
-                this.params.worldHeight,
-                this.params.plantGrowthRate,
-                this.params.herbivoreSpeed,
-                this.params.carnivoreSpeed,
-                this.params.enableMutation,
-                this.params.enableReproduction,
-                this.params.randomSeed
-            ])
-        );
-
-        // Convert entities to GPU buffer format
-        const entityData = new Float32Array(this.entities.size * 12); // 12 floats per entity
-        let i = 0;
-        for (const entity of this.entities.values()) {
-            entityData[i*12 + 0] = entity.position[0];
-            entityData[i*12 + 1] = entity.position[1];
-            entityData[i*12 + 2] = entity.velocity[0];
-            entityData[i*12 + 3] = entity.velocity[1];
-            entityData[i*12 + 4] = entity.energy;
-            entityData[i*12 + 5] = entity.species;
-            entityData[i*12 + 6] = entity.size;
-            entityData[i*12 + 7] = entity.genes[0];
-            entityData[i*12 + 8] = entity.genes[1];
-            entityData[i*12 + 9] = entity.genes[2];
-            entityData[i*12 + 10] = entity.genes[3];
-            entityData[i*12 + 11] = entity.neural;
-            i++;
-        }
-
-        // Upload entity data
-        this.gpuManager.device.queue.writeBuffer(
-            this.buffers.input,
-            0,
-            entityData
-        );
-
-        // Upload neural network data
-        const networkData = new Float32Array(this.networks.size * 56);
-        i = 0;
-        for (const network of this.networks.values()) {
-            const gpuData = network.toGPUFormat();
-            networkData.set(gpuData, i * 56);
-            i++;
-        }
-        this.gpuManager.device.queue.writeBuffer(
-            this.buffers.neuralNets,
-            0,
-            networkData
-        );
-
-        // Run update compute shader (behavior/decisions)
-        this.gpuManager.executeCompute(
-            this.gpuManager.computePipeline.update,
-            [this.bindGroups.simulation],
-            [Math.ceil(this.entities.size / 64), 1, 1]
-        );
-
-        // Run physics compute shader
-        this.gpuManager.executeCompute(
-            this.gpuManager.computePipeline.physics,
-            [this.bindGroups.simulation],
-            [Math.ceil(this.entities.size / 64), 1, 1]
-        );
-
-        // Read back results
-        const readbackBuffer = this.gpuManager.device.createBuffer({
-            size: entityData.byteLength,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
-        });
-
-        const commandEncoder = this.gpuManager.device.createCommandEncoder();
-        commandEncoder.copyBufferToBuffer(
-            this.buffers.output,
-            0,
-            readbackBuffer,
-            0,
-            entityData.byteLength
-        );
-        this.gpuManager.device.queue.submit([commandEncoder.finish()]);
-
-        // Update entity states
-        await readbackBuffer.mapAsync(GPUMapMode.READ);
-        const data = new Float32Array(readbackBuffer.getMappedRange());
-        i = 0;
-        for (const entity of this.entities.values()) {
-            entity.position[0] = data[i*12 + 0];
-            entity.position[1] = data[i*12 + 1];
-            entity.velocity[0] = data[i*12 + 2];
-            entity.velocity[1] = data[i*12 + 3];
-            entity.energy = data[i*12 + 4];
-            // Species, size, and genes remain unchanged
-            i++;
-
-            // Remove dead entities
-            if (entity.energy <= 0) {
-                this.entities.delete(entity.id);
-                this.networks.delete(entity.neural);
-                this.stats.entityCount = this.entities.size;
-                this.stats.networkCount = this.networks.size;
-            }
-        }
-        readbackBuffer.unmap();
-
-        // Handle interactions between entities
-        for (const entity1 of this.entities.values()) {
-            for (const entity2 of this.entities.values()) {
-                if (entity1.id === entity2.id) continue;
-
-                // Handle predator-prey interactions
-                if (entity1.species === 2 && entity2.species === 1) {
-                    this.handlePredation(entity1, entity2);
-                }
-            }
-        }
     }
 
     /**
@@ -395,13 +353,13 @@ export class CoreSimulation {
     canReproduce(entity1, entity2) {
         // Must be same species
         if (entity1.species !== entity2.species) return false;
-        
+
         // Must be mature
         if (entity1.age < 100 || entity2.age < 100) return false;
-        
+
         // Must have enough energy
         if (entity1.energy < 50 || entity2.energy < 50) return false;
-        
+
         // Must be close enough
         const dx = entity1.position[0] - entity2.position[0];
         const dy = entity1.position[1] - entity2.position[1];
@@ -415,7 +373,7 @@ export class CoreSimulation {
     async reproduce(parent1Id, parent2Id) {
         const parent1 = this.entities.get(parent1Id);
         const parent2 = this.entities.get(parent2Id);
-        
+
         if (!parent1 || !parent2) {
             throw new Error('Invalid parent IDs');
         }
@@ -486,15 +444,15 @@ export class CoreSimulation {
         const dx = predator.position[0] - prey.position[0];
         const dy = predator.position[1] - prey.position[1];
         const distSq = dx * dx + dy * dy;
-        
+
         // Attack range based on predator size
         const attackRange = predator.size * 10;
-        
+
         if (distSq <= attackRange * attackRange) {
             // Calculate attack success based on predator's strength (gene[3])
             const attackStrength = predator.genes[3];
             const defenseStrength = prey.size;
-            
+
             // Attack succeeds if predator is stronger
             if (attackStrength > defenseStrength) {
                 // Transfer energy from prey to predator

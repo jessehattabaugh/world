@@ -1,99 +1,143 @@
 // Modern effects script for animations and audio
-
-// Audio context and sounds
+// Audio context and pooling system
 let audioContext;
 let audioInitialized = false;
+const OSCILLATOR_POOL_SIZE = 8;
+let oscillatorPool = [];
+let nextOscillator = 0;
 
-// Audio initialization - on user interaction to comply with browser policies
+// Performance optimization flags
+const PERF_FLAGS = {
+  enableMouseTrail: true,
+  maxParticles: 20,
+  minTimeBetweenParticles: 16, // ~60fps
+  enableHoverSounds: false,    // Disable by default for better performance
+  enableScrollAnimations: true
+};
+
+// Initialize pooled audio resources
 function initAudio() {
-  if (audioInitialized) {return;}
+	if (audioInitialized) return;
 
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  audioInitialized = true;
+	audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+	// Create oscillator pool
+	for (let i = 0; i < OSCILLATOR_POOL_SIZE; i++) {
+		const gainNode = audioContext.createGain();
+		gainNode.connect(audioContext.destination);
+		gainNode.gain.value = 0;
+
+		oscillatorPool.push({
+			oscillator: null,
+			gainNode,
+			active: false,
+		});
+	}
+
+	audioInitialized = true;
 }
 
-// Play a sound with specific parameters
+// Get next available oscillator from pool
+function getOscillator() {
+	const poolEntry = oscillatorPool[nextOscillator];
+	nextOscillator = (nextOscillator + 1) % OSCILLATOR_POOL_SIZE;
+
+	if (poolEntry.active) {
+		poolEntry.oscillator.stop();
+		poolEntry.oscillator.disconnect();
+	}
+
+	const oscillator = audioContext.createOscillator();
+	oscillator.connect(poolEntry.gainNode);
+	poolEntry.oscillator = oscillator;
+	poolEntry.active = true;
+
+	return poolEntry;
+}
+
+// Play sound using pooled oscillators
 function playSound(frequency, type = 'sine', duration = 0.15, volume = 0.2) {
-  if (!audioInitialized) {return;}
+	if (!audioInitialized) return;
 
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
+	const { oscillator, gainNode } = getOscillator();
+	oscillator.type = type;
+	oscillator.frequency.value = frequency;
 
-  oscillator.type = type;
-  oscillator.frequency.value = frequency;
+	gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+	gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.01);
+	gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
 
-  gainNode.gain.value = volume;
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-
-  oscillator.start();
-  oscillator.stop(audioContext.currentTime + duration);
+	oscillator.start();
+	oscillator.stop(audioContext.currentTime + duration);
 }
 
 // UI Sound effects
-function playClickSound() {
-  playSound(800, 'sine', 0.08, 0.15);
-}
+const clickSound = () => playSound(800, 'sine', 0.08, 0.15);
+const hoverSound = () => PERF_FLAGS.enableHoverSounds && playSound(1200, 'sine', 0.05, 0.05);
+const successSound = () => {
+	if (!audioInitialized) return;
+	setTimeout(() => playSound(600, 'sine', 0.1), 0);
+	setTimeout(() => playSound(800, 'sine', 0.1), 100);
+	setTimeout(() => playSound(1000, 'sine', 0.2), 200);
+};
 
-function playHoverSound() {
-  playSound(1200, 'sine', 0.05, 0.05);
-}
+// Mouse trail optimization
+let lastParticleTime = 0;
+const particlePool = new Array(PERF_FLAGS.maxParticles).fill(null).map(() => {
+	const particle = document.createElement('div');
+	particle.className = 'mouse-trail-particle';
+	particle.style.display = 'none';
+	return particle;
+});
+let nextParticle = 0;
 
-function playSuccessSound() {
-  // Play a little melody
-  setTimeout(() => {return playSound(600, 'sine', 0.1)}, 0);
-  setTimeout(() => {return playSound(800, 'sine', 0.1)}, 100);
-  setTimeout(() => {return playSound(1000, 'sine', 0.2)}, 200);
-}
-
-// Animation on scroll
-function handleScrollAnimations() {
-  const elements = document.querySelectorAll('.animate-on-scroll');
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-      }
-    });
-  }, { threshold: 0.1 });
-
-  elements.forEach(element => {
-    observer.observe(element);
-  });
-}
-
-// Add mouse trail effect
 function createMouseTrail() {
-  const trailContainer = document.createElement('div');
-  trailContainer.className = 'mouse-trail-container';
-  document.body.appendChild(trailContainer);
+	if (!PERF_FLAGS.enableMouseTrail) return;
 
-  document.addEventListener('mousemove', (e) => {
-    const trail = document.createElement('div');
-    trail.className = 'mouse-trail-particle';
-    trail.style.left = `${e.clientX  }px`;
-    trail.style.top = `${e.clientY  }px`;
+	const trailContainer = document.createElement('div');
+	trailContainer.className = 'mouse-trail-container';
+	document.body.appendChild(trailContainer);
 
-    const size = Math.random() * 15 + 5;
-    const hue = Math.random() * 60 + 290; // Purple to pink range
+	// Add particles to container
+	particlePool.forEach((particle) => trailContainer.appendChild(particle));
 
-    trail.style.width = `${size  }px`;
-    trail.style.height = `${size  }px`;
-    trail.style.backgroundColor = `hsla(${hue}, 100%, 70%, 0.7)`;
+	// Optimized mousemove handler using throttling and particle pool
+	let mouseMoveCallback = (e) => {
+		const now = performance.now();
+		if (now - lastParticleTime < PERF_FLAGS.minTimeBetweenParticles) return;
+		lastParticleTime = now;
 
-    trailContainer.appendChild(trail);
+		const particle = particlePool[nextParticle];
+		nextParticle = (nextParticle + 1) % PERF_FLAGS.maxParticles;
 
-    setTimeout(() => {
-      trail.remove();
-    }, 1000);
-  });
+		const size = Math.random() * 15 + 5;
+		const hue = Math.random() * 60 + 290; // Purple to pink range
 
-  // Add the CSS for the trail
-  const styleElement = document.createElement('style');
-  styleElement.textContent = `
+		Object.assign(particle.style, {
+			display: 'block',
+			left: `${e.clientX}px`,
+			top: `${e.clientY}px`,
+			width: `${size}px`,
+			height: `${size}px`,
+			backgroundColor: `hsla(${hue}, 100%, 70%, 0.7)`,
+		});
+
+		// Use requestAnimationFrame for smoother cleanup
+		requestAnimationFrame(() => {
+			particle.style.transform = 'scale(0)';
+			particle.style.opacity = '0';
+			setTimeout(() => {
+				particle.style.display = 'none';
+			}, 1000);
+		});
+	};
+
+	// Use passive event listener for better scroll performance
+	document.addEventListener('mousemove', mouseMoveCallback, { passive: true });
+
+	// Add the CSS with optimized animations
+	const styleElement = document.createElement('style');
+	styleElement.textContent = `
     .mouse-trail-container {
       position: fixed;
       top: 0;
@@ -106,62 +150,88 @@ function createMouseTrail() {
     .mouse-trail-particle {
       position: absolute;
       border-radius: 50%;
-      transform: translate(-50%, -50%);
-      animation: trail-fade 1s ease-out forwards;
-    }
-    @keyframes trail-fade {
-      0% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
-      100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+      transform: translate(-50%, -50%) scale(1);
+      transition: transform 1s ease-out, opacity 1s ease-out;
+      will-change: transform, opacity;
     }
   `;
-  document.head.appendChild(styleElement);
+	document.head.appendChild(styleElement);
 }
 
-// Add event listeners
+// Optimized scroll animations using IntersectionObserver
+function handleScrollAnimations() {
+  if (!PERF_FLAGS.enableScrollAnimations) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          // Stop observing after animation
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    {
+      threshold: 0.1,
+      rootMargin: '20px'
+    }
+  );
+
+  document.querySelectorAll('.animate-on-scroll').forEach(element => {
+    observer.observe(element);
+  });
+}
+
+// Optimized event listeners
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize scroll animations
-  handleScrollAnimations();
+	// Initialize scroll animations
+	handleScrollAnimations();
 
-  // Create mouse trail effect
-  createMouseTrail();
+	// Create mouse trail with performance flags
+	createMouseTrail();
 
-  // Add click sound to buttons and links
-  document.querySelectorAll('a, button, .cta-button, .fancy-toggle').forEach(element => {
-    element.addEventListener('click', (e) => {
-      initAudio();
-      playClickSound();
-    });
+	// Batch add event listeners
+	const interactiveElements = document.querySelectorAll('a, button, .cta-button, .fancy-toggle');
 
-    element.addEventListener('mouseenter', (e) => {
-      if (audioInitialized) {
-        playHoverSound();
-      }
-    });
-  });
+	const handleInteraction = (element) => {
+		const clickHandler = (e) => {
+			initAudio();
+			clickSound();
+		};
 
-  // One-time initialization on first user interaction
-  document.addEventListener('click', () => {
-    initAudio();
-  }, { once: true });
+		const mouseenterHandler = (e) => {
+			if (audioInitialized) {
+				hoverSound();
+			}
+		};
 
-  // Animation for cards
-  document.querySelectorAll('.card').forEach(card => {
-    card.addEventListener('mouseenter', () => {
-      if (audioInitialized) {
-        playSound(500, 'sine', 0.1, 0.1);
-      }
-    });
-  });
+		element.addEventListener('click', clickHandler);
+		if (PERF_FLAGS.enableHoverSounds) {
+			element.addEventListener('mouseenter', mouseenterHandler);
+		}
+	};
 
-  // Handle theme toggle
-  const themeToggle = document.querySelector('theme-toggle');
-  if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-      const isPressed = themeToggle.getAttribute('aria-pressed') === 'true';
-      themeToggle.setAttribute('aria-pressed', !isPressed);
-      if (audioInitialized) {
-        playSuccessSound();
-      }
-    });
-  }
+	interactiveElements.forEach(handleInteraction);
+
+	// One-time initialization on first user interaction
+	document.addEventListener(
+		'click',
+		() => {
+			initAudio();
+		},
+		{ once: true },
+	);
+
+	// Handle theme toggle
+	const themeToggle = document.querySelector('theme-toggle');
+	if (themeToggle) {
+		themeToggle.addEventListener('click', () => {
+			const isPressed = themeToggle.getAttribute('aria-pressed') === 'true';
+			themeToggle.setAttribute('aria-pressed', !isPressed);
+			if (audioInitialized) {
+				successSound();
+			}
+		});
+	}
 });

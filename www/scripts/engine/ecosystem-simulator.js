@@ -7,43 +7,40 @@
  * - Provides the public API for interacting with the simulation
  */
 
+import { CoreSimulation } from './core-simulation.js';
 import { TileManager } from './tile-manager.js';
 import { WebGPUManager } from './webgpu-manager.js';
-import { CoreSimulation } from './core-simulation.js';
 
 export class EcosystemSimulator {
-  /**
-   * Create a new ecosystem simulator
-   * @param {string} containerId - ID of the container element
-   * @param {Object} options - Simulation options
-   */
   constructor(containerId, options = {}) {
-    // Store container ID
-    this.containerId = containerId;
-
-    // Store options with defaults
     this.options = {
       width: options.width || 1024,
       height: options.height || 768,
       tileSize: options.tileSize || 512,
       maxEntitiesPerTile: options.maxEntitiesPerTile || 1000,
-      autoStart: options.autoStart || false
+      autoStart: options.autoStart || false,
+      showStats: options.showStats || false
     };
 
-    // State
-    this.isInitialized = false;
-    this.isRunning = false;
-    this.frameCount = 0;
-    this.lastFrameTime = 0;
+    this.state = {
+      isInitialized: false,
+      isRunning: false,
+      frameCount: 0,
+      lastFrameTime: 0,
+      stats: {
+        fps: 0,
+        frameTime: 0,
+        entityCount: 0
+      }
+    };
 
-    // Feature detection
     this.features = {
       webGPU: false,
       offscreenCanvas: typeof OffscreenCanvas !== 'undefined',
       webWorker: typeof Worker !== 'undefined'
     };
 
-    // Managers and engines
+    this.containerId = containerId;
     this.container = null;
     this.canvas = null;
     this.context = null;
@@ -51,14 +48,6 @@ export class EcosystemSimulator {
     this.coreSimulation = null;
     this.tileManager = null;
 
-    // Statistics
-    this.stats = {
-      fps: 0,
-      frameTime: 0,
-      entityCount: 0
-    };
-
-    // Bind methods
     this.render = this.render.bind(this);
 
     // Initialize when document is ready
@@ -67,19 +56,11 @@ export class EcosystemSimulator {
     } else {
       this.initialize();
     }
-
-    // Expose compute pipeline structure that tests expect
-    this.computePipeline = {
-      update: null,
-      physics: null,
-      bindGroupLayout: null
-    };
   }
 
-  // Add lifeform buffer structure
-  lifeformBuffer = {
+  // Standardized lifeform buffer layout
+  static lifeformBufferLayout = {
     stride: 48, // bytes per entity
-    capacity: 1000,
     attributes: {
       position: { offset: 0, size: 8 },  // vec2f
       velocity: { offset: 8, size: 8 },  // vec2f
@@ -91,90 +72,32 @@ export class EcosystemSimulator {
     }
   };
 
-  /**
-   * Initialize the simulator
-   * @returns {Promise<boolean>} - Whether initialization was successful
-   */
   async initialize() {
-    console.debug('🌎 Initializing EcosystemSimulator...');
-
     try {
-      // Get container element
       this.container = document.getElementById(this.containerId);
       if (!this.container) {
         throw new Error(`Container element with ID "${this.containerId}" not found`);
       }
 
-      // Check for WebGPU support
+      // Initialize WebGPU and canvas
       this.features.webGPU = WebGPUManager.isWebGPUSupported();
       if (this.features.webGPU) {
-        // Initialize WebGPU
-        const gpuInitialized = await this.gpuManager.initialize();
-        this.features.webGPU = gpuInitialized;
+        this.features.webGPU = await this.gpuManager.initialize();
       }
 
-      // Create and configure main canvas
-      this.canvas = document.createElement('canvas');
-      this.canvas.width = this.options.width;
-      this.canvas.height = this.options.height;
-      this.canvas.style.width = '100%';
-      this.canvas.style.height = '100%';
-      this.canvas.style.display = 'block';
-      this.canvas.className = 'ecosystem-canvas';
+      // Setup canvas
+      this.canvas = this.setupCanvas();
+      this.context = this.features.webGPU ?
+        this.gpuManager.configureCanvas(this.canvas) :
+        this.canvas.getContext('2d');
 
-      // Add canvas to container
-      this.container.innerHTML = ''; // Clear container
-      this.container.appendChild(this.canvas);
+      // Initialize core systems
+      await this.initializeSystems();
 
-      // Configure context based on WebGPU support
-      if (this.features.webGPU) {
-        this.context = this.gpuManager.configureCanvas(this.canvas);
-        
-        // Initialize core simulation
-        this.coreSimulation = new CoreSimulation(this.gpuManager);
-        await this.coreSimulation.initialize();
-      } else {
-        // Fallback to 2D context
-        this.context = this.canvas.getContext('2d');
+      this.state.isInitialized = true;
+      if (this.options.autoStart) {
+        this.start();
       }
-
-      // Initialize tile manager with correct options
-      this.tileManager = new TileManager({
-        worldWidth: this.options.width,
-        worldHeight: this.options.height,
-        tileSize: this.options.tileSize,
-        maxEntitiesPerTile: this.options.maxEntitiesPerTile,
-        gpuManager: this.gpuManager
-      });
-
-      // Initialize tile system
-      const tileInitialized = await this.tileManager.initialize();
-      if (!tileInitialized) {
-        console.warn('Tile system initialization failed, falling back to single-threaded mode');
-      }
-
-      // Update feature detection
-      this.features.offscreenCanvas = typeof OffscreenCanvas !== 'undefined';
-      this.features.webWorker = typeof Worker !== 'undefined' && tileInitialized;
-
-      // After initializing WebGPU and core simulation, set up compute pipeline reference
-      if (this.features.webGPU && this.gpuManager.computePipeline) {
-        this.computePipeline = {
-          update: this.gpuManager.computePipeline.update,
-          physics: this.gpuManager.computePipeline.physics,
-          bindGroupLayout: this.gpuManager.computePipeline.bindGroupLayout
-        };
-      }
-
-      // Mark as initialized
-      this.isInitialized = true;
-
-      // Log initialization complete with feature support
-      console.debug('🌎 EcosystemSimulator initialization complete', {
-        features: this.features,
-        tileCount: this.tileManager.tiles.size,
-        workerCount: this.tileManager.workers.length
-      });
 
       return true;
     } catch (error) {
@@ -183,35 +106,54 @@ export class EcosystemSimulator {
     }
   }
 
-  /**
-   * Start the simulation loop
-   */
+  setupCanvas() {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.options.width;
+    canvas.height = this.options.height;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    canvas.className = 'ecosystem-canvas';
+
+    this.container.innerHTML = '';
+    this.container.appendChild(canvas);
+    return canvas;
+  }
+
+  async initializeSystems() {
+    if (this.features.webGPU) {
+      this.coreSimulation = new CoreSimulation(this.gpuManager);
+      await this.coreSimulation.initialize();
+    }
+
+    this.tileManager = new TileManager({
+      worldWidth: this.options.width,
+      worldHeight: this.options.height,
+      tileSize: this.options.tileSize,
+      maxEntitiesPerTile: this.options.maxEntitiesPerTile,
+      gpuManager: this.gpuManager
+    });
+
+    this.features.webWorker = await this.tileManager.initialize();
+  }
+
   start() {
-    if (!this.isInitialized || this.isRunning) return;
-    
-    // Start tile workers if available
+    if (!this.state.isInitialized || this.state.isRunning) return;
+
     if (this.features.webWorker) {
       this.tileManager.start();
     }
-    
-    this.isRunning = true;
-    this.lastFrameTime = performance.now();
+
+    this.state.isRunning = true;
+    this.state.lastFrameTime = performance.now();
     requestAnimationFrame(this.render);
-    
-    console.debug('🌎 Simulation started');
   }
 
-  /**
-   * Stop the simulation loop
-   */
   stop() {
-    // Stop tile workers if available
     if (this.features.webWorker) {
       this.tileManager.stop();
     }
-    
-    this.isRunning = false;
-    console.debug('🌎 Simulation stopped');
+    this.state.isRunning = false;
   }
 
   /**
@@ -219,7 +161,7 @@ export class EcosystemSimulator {
    * @param {Object} options - Lifeform options
    */
   spawnLifeform(options = {}) {
-    if (!this.isInitialized) return null;
+    if (!this.state.isInitialized) return null;
 
     // Create the entity
     const entity = this.features.webWorker ?
@@ -233,7 +175,7 @@ export class EcosystemSimulator {
    * Create offspring from two parent lifeforms
    */
   async reproduce(parent1Id, parent2Id) {
-    if (!this.isInitialized || !this.coreSimulation) {
+    if (!this.state.isInitialized || !this.coreSimulation) {
       throw new Error('Simulation not initialized');
     }
     return await this.coreSimulation.reproduce(parent1Id, parent2Id);
@@ -321,13 +263,13 @@ export class EcosystemSimulator {
     if (this.features.webWorker) {
       this.tileManager.reset();
     }
-    
+
     // Stop simulation if running
-    if (this.isRunning) {
+    if (this.state.isRunning) {
       this.stop();
     }
 
-    this.frameCount = 0;
+    this.state.frameCount = 0;
     console.debug('🌱 Simulation reset');
   }
 
@@ -335,61 +277,54 @@ export class EcosystemSimulator {
    * Step the simulation forward one frame
    */
   async step() {
-    if (!this.coreSimulation || !this.isInitialized) return;
+    if (!this.coreSimulation || !this.state.isInitialized) return;
 
     const now = performance.now();
-    const deltaTime = Math.min((now - this.lastFrameTime) / 1000, 0.1);
-    this.lastFrameTime = now;
+    const deltaTime = Math.min((now - this.state.lastFrameTime) / 1000, 0.1);
+    this.state.lastFrameTime = now;
 
     // Update core simulation
     await this.coreSimulation.update(deltaTime);
-    this.frameCount++;
+    this.state.frameCount++;
 
     // Update stats every 30 frames
-    if (this.frameCount % 30 === 0) {
-      this.stats = {
-        ...this.stats,
+    if (this.state.frameCount % 30 === 0) {
+      this.state.stats = {
+        ...this.state.stats,
         entityCount: this.coreSimulation.stats.entityCount,
         fps: Math.round(1 / deltaTime)
       };
     }
   }
 
-  /**
-   * Render loop - draws the simulation state to the main canvas
-   * @param {number} timestamp - Current time from requestAnimationFrame
-   * @private
-   */
   render(timestamp) {
-    if (!this.isInitialized || !this.isRunning) return;
+    if (!this.state.isInitialized || !this.state.isRunning) return;
 
-    // Calculate delta time and update stats
-    const deltaTime = (timestamp - this.lastFrameTime) / 1000; // Convert to seconds
-    this.lastFrameTime = timestamp;
-    this.frameCount++;
+    const deltaTime = (timestamp - this.state.lastFrameTime) / 1000;
+    this.state.lastFrameTime = timestamp;
+    this.state.frameCount++;
 
     // Update simulation
-    if (this.coreSimulation) {
-      this.coreSimulation.update(deltaTime);
+    this.coreSimulation?.update(deltaTime);
+
+    // Update stats periodically
+    if (this.state.frameCount % 30 === 0) {
+      this.updateStats(deltaTime);
     }
 
-    // Update FPS stats (every half second)
-    if (this.frameCount % 30 === 0) {
-      this.stats.frameTime = deltaTime * 1000;
-      this.stats.fps = Math.round(1000 / (deltaTime * 1000));
-
-      if (this.coreSimulation) {
-        this.stats.entityCount = this.coreSimulation.getStats().entityCount;
-      }
-    }
-
-    // Draw to main canvas
     this.drawMainCanvas();
 
-    // Continue the render loop
-    if (this.isRunning) {
+    if (this.state.isRunning) {
       requestAnimationFrame(this.render);
     }
+  }
+
+  updateStats(deltaTime) {
+    this.state.stats = {
+      frameTime: deltaTime * 1000,
+      fps: Math.round(1000 / (deltaTime * 1000)),
+      entityCount: this.coreSimulation?.getStats().entityCount || 0
+    };
   }
 
   /**
@@ -421,7 +356,7 @@ export class EcosystemSimulator {
 
           // Draw entity
           ctx.beginPath();
-          ctx.arc(entity.position[0], entity.position[1], 
+          ctx.arc(entity.position[0], entity.position[1],
                  entity.size * 5, 0, Math.PI * 2);
           ctx.fill();
 
@@ -464,8 +399,8 @@ export class EcosystemSimulator {
 
     ctx.font = '12px monospace';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.fillText(`FPS: ${this.stats.fps}`, 10, 20);
-    ctx.fillText(`Entities: ${this.stats.entityCount}`, 10, 35);
-    ctx.fillText(`Frame Time: ${this.stats.frameTime.toFixed(2)}ms`, 10, 50);
+    ctx.fillText(`FPS: ${this.state.stats.fps}`, 10, 20);
+    ctx.fillText(`Entities: ${this.state.stats.entityCount}`, 10, 35);
+    ctx.fillText(`Frame Time: ${this.state.stats.frameTime.toFixed(2)}ms`, 10, 50);
   }
 }

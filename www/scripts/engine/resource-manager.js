@@ -1,6 +1,6 @@
 /**
  * Resource Manager
- * 
+ *
  * Handles the spawning, distribution, and regeneration of resources
  * (food, water, etc.) in the ecosystem.
  */
@@ -9,7 +9,7 @@ export class ResourceManager {
         this.resources = new Map();
         this.nextResourceId = 0;
         this.lastUpdate = performance.now();
-        
+
         // Resource regeneration settings
         this.settings = {
             foodRegenerationRate: 0.01,    // Resources per second
@@ -17,7 +17,7 @@ export class ResourceManager {
             maxFoodDensity: 0.0001,        // Resources per pixel
             foodEnergyValue: 25            // Energy gained from consuming
         };
-        
+
         // Statistics
         this.stats = {
             totalResources: 0,
@@ -55,8 +55,8 @@ export class ResourceManager {
             const dx = x - resource.position[0];
             const dy = y - resource.position[1];
             const distSq = dx * dx + dy * dy;
-            
-            if (distSq < this.settings.foodRegenerationRadius * 
+
+            if (distSq < this.settings.foodRegenerationRadius *
                        this.settings.foodRegenerationRadius) {
                 return false;
             }
@@ -73,10 +73,10 @@ export class ResourceManager {
 
         const energyGained = resource.energy;
         this.resources.delete(resourceId);
-        
+
         this.stats.totalResources = this.resources.size;
         this.stats.resourcesConsumed++;
-        
+
         return energyGained;
     }
 
@@ -92,7 +92,7 @@ export class ResourceManager {
             // Try to spawn new food at random location
             const x = Math.random() * 800; // TODO: Get world size from simulation
             const y = Math.random() * 600;
-            
+
             if (this.canSpawnFoodAt(x, y)) {
                 this.spawnFood(x, y);
             }
@@ -112,12 +112,12 @@ export class ResourceManager {
     getResourcesInRange(x, y, range) {
         const rangeSq = range * range;
         const nearby = [];
-        
+
         for (const resource of this.resources.values()) {
             const dx = x - resource.position[0];
             const dy = y - resource.position[1];
             const distSq = dx * dx + dy * dy;
-            
+
             if (distSq <= rangeSq) {
                 nearby.push({
                     ...resource,
@@ -125,7 +125,7 @@ export class ResourceManager {
                 });
             }
         }
-        
+
         return nearby.sort((a, b) => a.distance - b.distance);
     }
 }

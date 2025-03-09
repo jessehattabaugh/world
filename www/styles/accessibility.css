@@ -1,0 +1,54 @@
+/* Accessibility Styles */
+
+/* Focus indicators */
+:focus {
+    outline: 2px solid var(--eco-accent);
+    outline-offset: 2px;
+}
+
+/* Skip link */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--eco-accent);
+    color: var(--eco-dark);
+    padding: 8px;
+    z-index: 100;
+    transition: top 0.2s;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* High contrast mode adjustments */
+@media (forced-colors: active) {
+    .eco-button {
+        border: 2px solid ButtonText;
+    }
+
+    .feature-item {
+        border: 1px solid ButtonText;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Focus visible polyfill */
+.js-focus-visible :focus:not(.focus-visible) {
+    outline: none;
+}
+
+.js-focus-visible .focus-visible {
+    outline: 2px solid var(--eco-accent);
+    outline-offset: 2px;
+}

@@ -34,11 +34,11 @@ fn processNeuralNetwork(entity: Entity, entityIndex: u32) -> vec4f {
         HIDDEN_SIZE +                 // Hidden biases
         OUTPUT_SIZE                   // Output biases
     );
-    
+
     // Prepare inputs
     let nearestFood = findNearestFood(entity);
     let nearestPredator = findNearestPredator(entity);
-    
+
     let inputs = array<f32, 4>(
         nearestFood.x,        // Distance to food
         nearestFood.y,        // Angle to food
@@ -55,9 +55,9 @@ fn processNeuralNetwork(entity: Entity, entityIndex: u32) -> vec4f {
         }
         // Add bias
         sum += neuralNetworks[
-            networkOffset + 
-            INPUT_SIZE * HIDDEN_SIZE + 
-            HIDDEN_SIZE * OUTPUT_SIZE + 
+            networkOffset +
+            INPUT_SIZE * HIDDEN_SIZE +
+            HIDDEN_SIZE * OUTPUT_SIZE +
             i
         ];
         hidden[i] = activate(sum);
@@ -68,18 +68,18 @@ fn processNeuralNetwork(entity: Entity, entityIndex: u32) -> vec4f {
         var sum = 0.0;
         for (var j = 0u; j < HIDDEN_SIZE; j++) {
             let weight = neuralNetworks[
-                networkOffset + 
-                INPUT_SIZE * HIDDEN_SIZE + 
+                networkOffset +
+                INPUT_SIZE * HIDDEN_SIZE +
                 j * OUTPUT_SIZE + i
             ];
             sum += hidden[j] * weight;
         }
         // Add bias
         sum += neuralNetworks[
-            networkOffset + 
-            INPUT_SIZE * HIDDEN_SIZE + 
-            HIDDEN_SIZE * OUTPUT_SIZE + 
-            HIDDEN_SIZE + 
+            networkOffset +
+            INPUT_SIZE * HIDDEN_SIZE +
+            HIDDEN_SIZE * OUTPUT_SIZE +
+            HIDDEN_SIZE +
             i
         ];
         // Store in output vector
@@ -135,7 +135,7 @@ fn findNearestPredator(entity: Entity) -> vec2f {
 @compute @workgroup_size(WORKGROUP_SIZE)
 fn update(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let idx = global_id.x;
-    
+
     // Make sure we don't go out of bounds
     if (idx >= arrayLength(&inputEntities)) {
         return;
@@ -149,7 +149,7 @@ fn update(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Get neural network decisions
     let decisions = processNeuralNetwork(entity, idx);
-    
+
     // Apply neural network outputs
     let moveDir = angleToDir(decisions[0] * TWO_PI);    // Movement direction
     let moveSpeed = decisions[1] * 5.0;                 // Movement speed
@@ -188,7 +188,7 @@ fn update(@builtin(global_invocation_id) global_id: vec3<u32>) {
 @compute @workgroup_size(WORKGROUP_SIZE)
 fn physics(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let idx = global_id.x;
-    
+
     // Make sure we don't go out of bounds
     if (idx >= arrayLength(&inputEntities)) {
         return;
@@ -220,7 +220,7 @@ fn physics(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Apply friction/drag
     entity.velocity *= 0.98;
-    
+
     // Prevent negative energy
     entity.energy = max(entity.energy, 0.0);
 

@@ -1,6 +1,6 @@
 /**
  * Main Entry Point
- * 
+ *
  * Initializes and exposes the ecosystem simulator globally
  */
 
@@ -20,7 +20,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             height: 600,
             showStats: true
         });
-        
+
         const initialized = await simulator.initialize();
 
         if (initialized) {

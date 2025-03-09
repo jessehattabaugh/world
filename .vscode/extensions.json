@@ -7,6 +7,7 @@
 		"esbenp.prettier-vscode",
 		"ms-playwright.playwright",
 		"ms-vscode.vscode-typescript-next",
-		"usernamehw.errorlens"
+		"usernamehw.errorlens",
+		"polymeilex.wgsl"
 	]
 }

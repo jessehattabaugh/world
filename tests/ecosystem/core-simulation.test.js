@@ -10,11 +10,11 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
   test.describe('Lifeform Data Structures', () => {
     test('should properly initialize lifeform buffer with correct structure', async ({ page }) => {
       await page.goto('/');
-      
+
       // Wait for simulator to initialize
-      await page.waitForSelector('#simulator-preview-canvas canvas', { 
-        state: 'attached', 
-        timeout: 10000 
+      await page.waitForSelector('#simulator-preview-canvas canvas', {
+        state: 'attached',
+        timeout: 10000
       });
 
       // Verify lifeform buffer structure
@@ -39,9 +39,9 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
 
     test('should be able to spawn and track multiple lifeforms', async ({ page }) => {
       await page.goto('/');
-      
+
       // Wait for simulator
-      await page.waitForSelector('#simulator-preview-canvas canvas', { 
+      await page.waitForSelector('#simulator-preview-canvas canvas', {
         state: 'attached'
       });
 
@@ -57,7 +57,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
           { x: 300, y: 300 }
         ];
 
-        const lifeforms = positions.map(pos => 
+        const lifeforms = positions.map(pos =>
           simulator.spawnLifeform(pos.x, pos.y)
         );
 
@@ -80,7 +80,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
   test.describe('Compute Shader Integration', () => {
     test('should compile and bind compute shaders successfully', async ({ page }) => {
       await page.goto('/');
-      
+
       const shaderStatus = await page.evaluate(() => {
         const simulator = window.jessesWorld?.simulator;
         if (!simulator?.computePipeline) return null;
@@ -109,15 +109,15 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
         // Spawn a test lifeform
         const lifeform = simulator.spawnLifeform(100, 100);
         const initialState = simulator.getLifeformState(lifeform.id);
-        
+
         // Run a few simulation steps
         await simulator.step();
         await simulator.step();
-        
+
         const updatedState = simulator.getLifeformState(lifeform.id);
-        
+
         return {
-          hasStateChanged: 
+          hasStateChanged:
             initialState.position.x !== updatedState.position.x ||
             initialState.position.y !== updatedState.position.y ||
             initialState.energy !== updatedState.energy,
@@ -136,7 +136,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
   test.describe('Genetic System', () => {
     test('should properly initialize lifeforms with genetic traits', async ({ page }) => {
       await page.goto('/');
-      
+
       const geneticResults = await page.evaluate(() => {
         const simulator = window.jessesWorld?.simulator;
         if (!simulator) return null;
@@ -149,7 +149,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
         });
 
         const genes = simulator.getLifeformState(parent.id).genes;
-        
+
         return {
           hasGenes: !!genes,
           geneCount: Object.keys(genes).length,
@@ -169,7 +169,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
 
     test('should properly handle genetic inheritance and mutation', async ({ page }) => {
       await page.goto('/');
-      
+
       const inheritanceResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
         if (!simulator) return null;
@@ -180,7 +180,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
           senseRange: 50,
           metabolism: 1.0
         });
-        
+
         const parent2 = simulator.spawnLifeform(120, 100, {
           speed: 3.0,
           senseRange: 60,
@@ -216,14 +216,14 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
   test.describe('Neural Network Decision Making', () => {
     test('should initialize neural networks for lifeforms', async ({ page }) => {
       await page.goto('/');
-      
+
       const nnResults = await page.evaluate(() => {
         const simulator = window.jessesWorld?.simulator;
         if (!simulator) return null;
 
         const lifeform = simulator.spawnLifeform(100, 100);
         const network = simulator.getNeuralNetwork(lifeform.id);
-        
+
         return {
           hasNetwork: !!network,
           inputCount: network?.inputLayer?.length,
@@ -248,7 +248,7 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
 
     test('should process neural network decisions in compute shader', async ({ page }) => {
       await page.goto('/');
-      
+
       const decisionResults = await page.evaluate(async () => {
         const simulator = window.jessesWorld?.simulator;
         if (!simulator) return null;
@@ -256,18 +256,18 @@ test.describe('Core Simulation Engine - Milestone 2', () => {
         // Create test scenario
         const lifeform = simulator.spawnLifeform(100, 100);
         simulator.spawnFood(150, 100); // Food to the right
-        
+
         const initialState = simulator.getLifeformState(lifeform.id);
-        
+
         // Run simulation steps
         await simulator.step();
         await simulator.step();
-        
+
         const updatedState = simulator.getLifeformState(lifeform.id);
-        
+
         return {
           // Check if lifeform moved in response to food
-          responsiveMovement: 
+          responsiveMovement:
             Math.abs(updatedState.position.x - initialState.position.x) > 0 ||
             Math.abs(updatedState.position.y - initialState.position.y) > 0,
           // Check if moving generally toward food
