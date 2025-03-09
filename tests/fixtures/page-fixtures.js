@@ -1,4 +1,5 @@
-import { test, expect } from '../utils/test-utils.js';
+import { expect, test } from '../utils/test-utils.js';
+
 import { BasePage } from './page-model.js';
 
 /**
@@ -11,6 +12,14 @@ export function createPageTest(PageClass) {
 
     // Create a new page instance for each test
     test.beforeEach(async ({ page: testPage }) => {
+      // Set up URL route handling for jessesworld.example.com domains
+      await testPage.route(/https:\/\/jessesworld\.example\.com.*/, route => {
+        const url = new URL(route.request().url());
+        url.host = 'localhost:3000';
+        url.protocol = 'http:';
+        return route.continue({ url: url.toString() });
+      });
+
       page = new PageClass(testPage);
       await page.goto();
       await page.waitForLoaded();

@@ -1,6 +1,8 @@
 /**
  * Base Page Object Model to encapsulate page interactions
  */
+import { mapTestUrl } from '../utils/url-mapping.js';
+
 export class BasePage {
   /**
    * @param {import('@playwright/test').Page} page
@@ -10,6 +12,7 @@ export class BasePage {
     this.url = '/';
     this.pageId = 'base-page';
     this.pageTitle = 'Base Page';
+    this.baseUrl = 'http://localhost:3000'; // Default base URL
   }
 
   /**
@@ -17,7 +20,12 @@ export class BasePage {
    * @param {Object} options Navigation options
    */
   async goto(options = {}) {
-    await this.page.goto(this.url, {
+    // Handle both relative and absolute URLs
+    const targetUrl = this.url.startsWith('http')
+      ? mapTestUrl(this.url)
+      : `${this.baseUrl}${this.url}`;
+
+    await this.page.goto(targetUrl, {
       waitUntil: 'networkidle',
       ...options
     });

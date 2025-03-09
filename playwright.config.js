@@ -62,10 +62,25 @@ export default defineConfig({
 	},
 
 	use: {
-		baseURL: 'http://localhost:3000',
+		baseURL: getBaseUrl(),
 		trace: 'on-first-retry',
 		screenshot: 'only-on-failure',
 		video: 'retain-on-failure',
+		// Set up route mapping for test domains to localhost
+		routing: {
+			url: request => {
+				// Map example.com domains to localhost
+				const url = new URL(request);
+				if (url.hostname === 'jessesworld.example.com') {
+					// Keep the path but change the origin to localhost:3000
+					url.hostname = 'localhost';
+					url.port = '3000';
+					url.protocol = 'http:';
+					return url.toString();
+				}
+				return request;
+			},
+		},
 	},
 
 	// Configure projects for different browsers

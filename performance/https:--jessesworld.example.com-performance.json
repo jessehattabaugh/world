@@ -1,0 +1,19 @@
+{
+  "navigationStart": 1741495081295,
+  "domLoading": 15,
+  "domInteractive": 30,
+  "domContentLoaded": 202,
+  "domComplete": 360,
+  "loadEvent": 363,
+  "FP": 360,
+  "FCP": 360,
+  "timestamp": "2025-03-09T04:38:02.545Z",
+  "thresholds": {
+    "FCP": 2000,
+    "LCP": 2500,
+    "CLS": 0.1,
+    "domContentLoaded": 2000,
+    "loadEvent": 3000
+  },
+  "createdAt": "2025-03-09T04:38:02.545Z"
+}
