@@ -40,7 +40,8 @@
 
 	<!-- JavaScript that can wait until the document is parsed -->
 	<script type="module" defer src="/scripts/index.js"></script>
-	<script type="module" defer src="/scripts/engine/simulator.js"></script>
+	<!-- New Ecosystem Simulator - Milestone 1: Infrastructure & WebGPU -->
+	<script type="module" defer src="/scripts/main.js"></script>
 </head>
 
 <body class="ecosystem-theme">
@@ -74,6 +75,7 @@
 					<a href="/simulator" class="cta-button pulse-effect" role="button">Launch Simulator</a>
 					<a href="/about" class="secondary-button" role="button">Learn More</a>
 				</div>
+				<div id="compatibility-notice" class="compatibility-notice"></div>
 			</div>
 		</section>
 
@@ -211,7 +213,7 @@
 	<!-- WebGPU Support Check -->
 	<dialog id="webgpu-warning" class="feature-warning">
 		<h2>WebGPU Support Required</h2>
-		<p>PixelBiome requires WebGPU, which is not available in your current browser.</p>
+		<p>Jesse's World requires WebGPU for full functionality. Your current browser may not support all features.</p>
 		<p>Please try Chrome 113+ or Edge 113+, or enable WebGPU in your browser's experimental flags.</p>
 		<button id="close-warning" class="eco-button">Dismiss</button>
 	</dialog>
