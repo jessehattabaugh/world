@@ -74,7 +74,9 @@ class JessesWorldSimulator {
     // Tile-based world configuration
     this.tileSize = options.tileSize || 256;
     this.workerCount = options.workerCount || (navigator.hardwareConcurrency || 4);
+    /** @type {Array<any>} */
     this.tiles = [];
+    /** @type {Array<any>} */
     this.workers = [];
 
     // Track feature support
@@ -118,7 +120,9 @@ class JessesWorldSimulator {
       }
 
       // Check for WebGPU support
-      if (!navigator.gpu) {
+      /** @type {any} */
+      const gpuNavigator = navigator;
+      if (!gpuNavigator.gpu) {
         throw new Error('WebGPU is not supported in this browser');
       }
       this.features.webGPU = true;
@@ -137,7 +141,7 @@ class JessesWorldSimulator {
       container.appendChild(this.canvas);
 
       // Request adapter and device
-      const adapter = await navigator.gpu.requestAdapter({
+      const adapter = await gpuNavigator.gpu.requestAdapter({
         powerPreference: 'high-performance'
       });
 
@@ -149,9 +153,11 @@ class JessesWorldSimulator {
 
       // Set up WebGPU context on the main canvas
       this.context = this.canvas.getContext('webgpu');
-      const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+      const canvasFormat = gpuNavigator.gpu.getPreferredCanvasFormat();
 
-      this.context.configure({
+      /** @type {any} */
+      const webgpuContext = this.context;
+      webgpuContext.configure({
         device: this.device,
         format: canvasFormat,
         alphaMode: 'premultiplied'
@@ -227,14 +233,15 @@ class JessesWorldSimulator {
           height: tileHeight,
           canvas: offscreenCanvas,
           context: renderContext,
-          // Worker will be assigned later
+          /** @type {any} */
           worker: null,
-          // Entities in this tile (managed by its worker)
+          /** @type {Array<any>} */
           entities: [],
           // State of the tile
           ready: false,
           active: true,
           lastUpdated: 0,
+          /** @type {Array<any>} */
           neighborTiles: []
         };
 
@@ -245,7 +252,7 @@ class JessesWorldSimulator {
     // Set up neighbor relationships between tiles for communication
     for (const tile of this.tiles) {
       // Find all adjacent tiles
-      tile.neighborTiles = this.tiles.filter(other => {
+      tile.neighborTiles = this.tiles.filter((/** @type {any} */ other) => {
         // A tile is a neighbor if it's adjacent (including diagonals)
         return Math.abs(other.x - tile.x) <= 1 &&
                Math.abs(other.y - tile.y) <= 1 &&
@@ -273,7 +280,7 @@ class JessesWorldSimulator {
         const worker = new Worker('/scripts/engine/tile-worker.js', { type: 'module' });
 
         // Set up message handler for this worker
-        worker.onmessage = (event) => this.handleWorkerMessage(worker, event);
+        worker.onmessage = (event) => { this.handleWorkerMessage(worker, event); };
 
         // Handle worker errors
         worker.onerror = (error) => {
@@ -329,7 +336,7 @@ class JessesWorldSimulator {
             top: tile.top,
             width: tile.width,
             height: tile.height,
-            neighborIds: tile.neighborTiles.map(n => n.id)
+            neighborIds: tile.neighborTiles.map((/** @type {any} */ n) => n.id)
           },
           // Transfer the canvas
           canvas: transferableCanvas
@@ -350,7 +357,7 @@ class JessesWorldSimulator {
             top: tile.top,
             width: tile.width,
             height: tile.height,
-            neighborIds: tile.neighborTiles.map(n => n.id)
+            neighborIds: tile.neighborTiles.map((/** @type {any} */ n) => n.id)
           }
         });
       }
@@ -369,14 +376,15 @@ class JessesWorldSimulator {
     const { type, tileId, ...data } = event.data;
 
     switch (type) {
-      case 'tileReady':
+      case 'tileReady': {
         // Mark the tile as ready for rendering
-        const tile = this.tiles.find(t => t.id === tileId);
+        const tile = this.tiles.find((/** @type {any} */ t) => t.id === tileId);
         if (tile) {
           tile.ready = true;
           console.debug(`🌱 Tile ${tileId} ready`);
         }
         break;
+      }
 
       case 'tileUpdate':
         // Handle tile update data (e.g., entity positions, state changes)
@@ -384,15 +392,16 @@ class JessesWorldSimulator {
         this.updateTileData(tileId, data);
         break;
 
-      case 'workerStatus':
+      case 'workerStatus': {
         // Update status of the worker
-        const workerInfo = this.workers.find(w => w.worker === worker);
+        const workerInfo = this.workers.find((/** @type {any} */ w) => w.worker === worker);
         if (workerInfo) {
           workerInfo.busy = data.busy;
           workerInfo.lastMessage = Date.now();
           // Additional worker status handling if needed
         }
         break;
+      }
 
       default:
         console.warn(`Unknown worker message type: ${type}`);
@@ -406,8 +415,8 @@ class JessesWorldSimulator {
    * @private
    */
   updateTileData(tileId, data) {
-    const tile = this.tiles.find(t => t.id === tileId);
-    if (!tile) return;
+    const tile = this.tiles.find((/** @type {any} */ t) => t.id === tileId);
+    if (!tile) { return; }
 
     // Update entity data for this tile
     if (data.entities) {
@@ -476,7 +485,7 @@ class JessesWorldSimulator {
    */
   showFallbackContent(errorMessage = '') {
     const container = document.getElementById(this.canvasId);
-    if (!container) return;
+    if (!container) { return; }
 
     // Create fallback content
     const fallback = document.createElement('div');
@@ -501,21 +510,21 @@ class JessesWorldSimulator {
    */
   enableControls() {
     // Enable spawn button
-    const spawnButton = document.getElementById('spawn-life');
+    const spawnButton = /** @type {HTMLButtonElement} */ (document.getElementById('spawn-life'));
     if (spawnButton) {
       spawnButton.disabled = false;
       spawnButton.addEventListener('click', this.spawnLifeform);
     }
 
     // Enable toggle button
-    const toggleButton = document.getElementById('toggle-simulation');
+    const toggleButton = /** @type {HTMLButtonElement} */ (document.getElementById('toggle-simulation'));
     if (toggleButton) {
       toggleButton.disabled = false;
       toggleButton.addEventListener('click', this.toggleSimulation);
     }
 
     // Enable reset button
-    const resetButton = document.getElementById('reset-preview');
+    const resetButton = /** @type {HTMLButtonElement} */ (document.getElementById('reset-preview'));
     if (resetButton) {
       resetButton.disabled = false;
       resetButton.addEventListener('click', this.resetSimulation);
@@ -526,7 +535,7 @@ class JessesWorldSimulator {
    * Start the simulation loop
    */
   startSimulation() {
-    if (this.isRunning) return;
+    if (this.isRunning) { return; }
 
     this.isRunning = true;
     this.lastFrameTime = performance.now();
@@ -547,7 +556,7 @@ class JessesWorldSimulator {
    * Stop the simulation loop
    */
   stopSimulation() {
-    if (!this.isRunning) return;
+    if (!this.isRunning) { return; }
 
     this.isRunning = false;
     if (this.animationFrameId) {
@@ -581,7 +590,7 @@ class JessesWorldSimulator {
    * Add a new lifeform to the simulation at a random location
    */
   spawnLifeform() {
-    if (!this.isInitialized) return;
+    if (!this.isInitialized) { return; }
 
     // Generate a random position within the world
     const x = Math.floor(Math.random() * this.width);
@@ -618,7 +627,7 @@ class JessesWorldSimulator {
    * Reset the simulation by clearing all lifeforms and resources
    */
   resetSimulation() {
-    if (!this.isInitialized) return;
+    if (!this.isInitialized) { return; }
 
     // Stop the simulation first
     const wasRunning = this.isRunning;
@@ -656,7 +665,7 @@ class JessesWorldSimulator {
    * @private
    */
   render(timestamp) {
-    if (!this.isInitialized || !this.isRunning) return;
+    if (!this.isInitialized || !this.isRunning) { return; }
 
     // Calculate delta time
     const deltaTime = timestamp - (this.lastFrameTime || timestamp);
@@ -667,10 +676,12 @@ class JessesWorldSimulator {
 
     // Begin drawing to the main canvas
     const encoder = this.device.createCommandEncoder();
+    /** @type {any} */
+    const currentTexture = webgpuContext.getCurrentTexture();
     const renderPass = encoder.beginRenderPass({
       colorAttachments: [
         {
-          view: this.context.getCurrentTexture().createView(),
+          view: currentTexture.createView(),
           loadOp: 'clear',
           storeOp: 'store',
           clearValue: { r: 0.0, g: 0.05, b: 0.1, a: 1.0 },
@@ -713,7 +724,7 @@ class JessesWorldSimulator {
     // Draw entities from all tiles (for demonstration)
     ctx.fillStyle = '#7fe084';
 
-    this.tiles.forEach(tile => {
+    this.tiles.forEach((/** @type {any} */ tile) => {
       // Draw tile ID for debugging
       ctx.font = '12px monospace';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
@@ -721,7 +732,7 @@ class JessesWorldSimulator {
 
       // Draw entities in this tile
       ctx.fillStyle = '#7fe084';
-      tile.entities.forEach(entity => {
+      tile.entities.forEach((/** @type {any} */ entity) => {
         if (entity.type === 'lifeform') {
           ctx.beginPath();
           ctx.arc(tile.left + entity.x, tile.top + entity.y, entity.size || 5, 0, Math.PI * 2);
@@ -745,5 +756,27 @@ class JessesWorldSimulator {
 // Initialize simulator
 document.addEventListener('DOMContentLoaded', () => {
   console.debug('🌱 DOM Content Loaded, creating simulator... 🚀');
+  /** @type {any} */
   window.simulator = new JessesWorldSimulator('simulator-preview-canvas');
 });
+
+/**
+ * Test that initializes the simulator, sets up tiles, and creates Web Workers.
+ */
+function testInitializeSimulator() {
+  // Create a new instance of JessesWorldSimulator
+  const simulator = new JessesWorldSimulator('simulator-container', {
+    width: 1024,
+    height: 768,
+    autoStart: true,
+    showStats: true,
+    initialLifeforms: 10,
+    tileSize: 256,
+    workerCount: 4
+  });
+
+  // Log the simulator instance to verify initialization
+  console.log('Simulator initialized:', simulator);
+}
+
+document.addEventListener('DOMContentLoaded', testInitializeSimulator);

@@ -42,6 +42,8 @@
       padding: 1rem;
       font-family: monospace;
       margin-top: 1rem;
+      font-size: 14px;
+      line-height: 1.5;
     }
 
     .success-message {
@@ -72,6 +74,13 @@
       transform: translateY(-2px);
     }
 
+    button:disabled {
+      background-color: #1a4d31;
+      color: #a7c9ae;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .controls {
       display: flex;
       justify-content: center;
@@ -92,6 +101,40 @@
     .home-link a:hover {
       text-decoration: underline;
     }
+
+    .shader-code {
+      background-color: rgba(10, 30, 18, 0.9);
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-family: monospace;
+      white-space: pre;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #e0e0e0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .code-comment {
+      color: #7fe084;
+    }
+
+    .performance-metrics {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 1rem;
+      font-family: monospace;
+    }
+
+    .metric {
+      text-align: center;
+    }
+
+    .metric-value {
+      font-size: 1.5rem;
+      color: #7fe084;
+    }
   </style>
 </head>
 <body>
@@ -111,6 +154,45 @@
         <li>Running the compute shader on the GPU</li>
         <li>Reading back and validating results</li>
       </ul>
+<h3>WGSL Compute Shader</h3>
+<div class="shader-code">
+	<span class="code-comment">// Input buffer containing values to multiply</span>
+	@group(0) @binding(0) var&lt;storage, read&gt; inputBuffer: array&lt;f32&gt;;
+
+	<span class="code-comment">// Output buffer to store results</span>
+	@group(0) @binding(1) var&lt;storage, read_write&gt; outputBuffer: array&lt;f32&gt;;
+
+	<span class="code-comment">// Compute shader entry point - workgroup size of 64 threads</span>
+	@compute @workgroup_size(64)
+	fn main(@builtin(global_invocation_id) global_id: vec3&lt;u32&gt;) {
+	<span class="code-comment">// Get the current index from thread ID</span>
+	let index = global_id.x;
+
+	<span class="code-comment">// Make sure we don't go out of bounds</span>
+	if (index >= arrayLength(&inputBuffer)) {
+	return;
+	}
+
+	<span class="code-comment">// Multiply each input value by 2</span>
+	outputBuffer[index] = inputBuffer[index] * 2.0;
+	}
+</div>
+
+<div id="performance-container" class="performance-metrics" style="display: none;">
+	<div class="metric">
+		<div class="metric-value" id="init-time">-</div>
+		<div class="metric-label">Init Time (ms)</div>
+	</div>
+	<div class="metric">
+		<div class="metric-value" id="compute-time">-</div>
+		<div class="metric-label">Compute Time (ms)</div>
+	</div>
+	<div class="metric">
+		<div class="metric-value" id="total-time">-</div>
+		<div class="metric-label">Total Time (ms)</div>
+	</div>
+</div>
+
       <div class="controls">
         <button id="run-demo">Run WebGPU Demo</button>
         <button id="clear-log">Clear Log</button>
@@ -133,21 +215,54 @@
     const statusContainer = document.getElementById('status-container');
     const runDemoButton = document.getElementById('run-demo');
     const clearLogButton = document.getElementById('clear-log');
+		const performanceContainer = document.getElementById('performance-container');
+		const initTimeElement = document.getElementById('init-time');
+		const computeTimeElement = document.getElementById('compute-time');
+		const totalTimeElement = document.getElementById('total-time');
+
+		// Check WebGPU support on load
+		document.addEventListener('DOMContentLoaded', () => {
+			if (!navigator.gpu) {
+				statusContainer.innerHTML = `
+          <div class="error-message">
+            [${new Date().toLocaleTimeString()}] Error: Your browser does not support WebGPU. Please try Chrome 113+, Edge 113+ or other browsers with WebGPU enabled. ❌
+          </div>
+        `;
+				runDemoButton.disabled = true;
+			} else {
+				statusContainer.innerHTML = `
+          <div class="success-message">
+            [${new Date().toLocaleTimeString()}] WebGPU is supported in your browser. Click "Run WebGPU Demo" to start. ✅
+          </div>
+        `;
+			}
+		});
 
     runDemoButton.addEventListener('click', async () => {
       // Disable the button while running
       runDemoButton.disabled = true;
+		runDemoButton.textContent = 'Running...';
       statusContainer.innerHTML = ''; // Clear previous logs
+		performanceContainer.style.display = 'none';
 
       try {
         // Initialize WebGPU and run the compute demo
+		  const startTime = performance.now();
         const result = await initWebGPU(statusContainer);
+		  const totalTime = performance.now() - startTime;
 
         if (result && result.success) {
+			// Update performance metrics
+			initTimeElement.textContent = result.performance.initTime.toFixed(2);
+			computeTimeElement.textContent = result.performance.computeTime.toFixed(2);
+			totalTimeElement.textContent = totalTime.toFixed(2);
+			performanceContainer.style.display = 'flex';
+
           runDemoButton.textContent = 'Run Again';
         }
       } catch (error) {
         console.error('Demo failed:', error);
+		  runDemoButton.textContent = 'Try Again';
       } finally {
         // Re-enable the button
         runDemoButton.disabled = false;
@@ -156,6 +271,7 @@
 
     clearLogButton.addEventListener('click', () => {
       statusContainer.innerHTML = '';
+		performanceContainer.style.display = 'none';
     });
   </script>
 </body>

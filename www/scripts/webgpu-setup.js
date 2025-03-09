@@ -11,11 +11,17 @@
 /**
  * Initializes WebGPU and runs a simple compute shader that multiplies each array element by 2
  * @param {HTMLElement} statusContainer - Container element for displaying status messages
- * @returns {Promise<void>}
+ * @returns {Promise<{device: GPUDevice, adapter: GPUAdapter, success: boolean, results: Float32Array, performance: {initTime: number, computeTime: number}}>}
  */
 async function initWebGPU(statusContainer) {
   // Keep track of initialization stages for better error reporting
   let currentStage = 'checking-support';
+  // Track performance metrics
+  const performance = {
+    startTime: performance.now(),
+    initTime: 0,
+    computeTime: 0
+  };
 
   try {
     // ============================
@@ -41,8 +47,31 @@ async function initWebGPU(statusContainer) {
       throw new Error('Couldn\'t request WebGPU adapter! Your device might not support WebGPU.');
     }
 
-    logStatus(statusContainer, 'GPU adapter acquired! ✅');
-    console.debug('🌱 GPU adapter acquired:', await adapter.requestAdapterInfo());
+    // Get detailed adapter info
+    const adapterInfo = await adapter.requestAdapterInfo();
+    logStatus(statusContainer, `GPU adapter acquired: ${adapterInfo.vendor} - ${adapterInfo.architecture} ✅`);
+    console.debug('🌱 GPU adapter acquired:', adapterInfo);
+    currentStage = 'checking-features';
+
+    // ============================
+    // 2.1 Check adapter features and limits
+    // ============================
+    // Check if the adapter has necessary features
+    const requiredFeatures = [];
+    const adapterFeatures = adapter.features;
+
+    for (const feature of requiredFeatures) {
+      if (!adapterFeatures.has(feature)) {
+        logStatus(statusContainer, `Warning: Adapter missing feature: ${feature} ⚠️`);
+        console.warn(`⚠️ Adapter missing feature: ${feature}`);
+      }
+    }
+
+    // Check adapter limits
+    const adapterLimits = adapter.limits;
+    logStatus(statusContainer, `Max Buffer Size: ${adapterLimits.maxBufferSize} bytes ✅`);
+    console.debug('🌱 Adapter limits:', adapterLimits);
+
     currentStage = 'requesting-device';
 
     // ============================
@@ -54,6 +83,12 @@ async function initWebGPU(statusContainer) {
       requiredLimits: {
         maxBufferSize: 1024 * 1024, // 1MB buffer size
       }
+    });
+
+    // Set up error handling on the device
+    device.addEventListener('uncapturederror', (event) => {
+      console.error('WebGPU device error:', event.error);
+      logStatus(statusContainer, `GPU error: ${event.error.message} ❌`, true);
     });
 
     logStatus(statusContainer, 'GPU device ready! ✅');
@@ -110,6 +145,13 @@ async function initWebGPU(statusContainer) {
     logStatus(statusContainer, 'Compute pipeline created! ✅');
     console.debug('🌱 Compute pipeline created');
     currentStage = 'preparing-data';
+
+    // Record initialization time
+    performance.initTime = performance.now() - performance.startTime;
+    logStatus(statusContainer, `WebGPU initialized in ${performance.initTime.toFixed(2)}ms ✅`);
+
+    // Start timing compute operations
+    const computeStartTime = performance.now();
 
     // ============================
     // 6. Prepare input data
@@ -233,7 +275,10 @@ async function initWebGPU(statusContainer) {
     // Unmap the buffer
     resultBuffer.unmap();
 
-    logStatus(statusContainer, 'Results retrieved from GPU! ✅');
+    // Record compute time
+    performance.computeTime = performance.now() - computeStartTime;
+
+    logStatus(statusContainer, `Results retrieved from GPU in ${performance.computeTime.toFixed(2)}ms! ✅`);
     console.debug('🌱 Results retrieved from GPU:', results);
 
     // ============================
@@ -261,8 +306,11 @@ async function initWebGPU(statusContainer) {
       ];
 
       logStatus(statusContainer, 'Sample results:', sampleResults.join('<br>'));
+
+      // Display performance metrics
+      logStatus(statusContainer, `Performance: Init: ${performance.initTime.toFixed(2)}ms, Compute: ${performance.computeTime.toFixed(2)}ms`);
     } else {
-      logStatus(statusContainer, 'Computation validation failed! Some results were incorrect. ❌');
+      logStatus(statusContainer, 'Computation validation failed! Some results were incorrect. ❌', true);
       console.error('❌ Compute validation failed!');
     }
 
@@ -280,7 +328,11 @@ async function initWebGPU(statusContainer) {
       device,
       adapter,
       success,
-      results
+      results,
+      performance: {
+        initTime: performance.initTime,
+        computeTime: performance.computeTime
+      }
     };
 
   } catch (error) {
@@ -295,6 +347,9 @@ async function initWebGPU(statusContainer) {
         break;
       case 'requesting-adapter':
         userMessage = 'Failed to request a GPU adapter. Your device might not have compatible graphics hardware.';
+        break;
+      case 'checking-features':
+        userMessage = 'Your GPU lacks some required features for this application.';
         break;
       case 'requesting-device':
         userMessage = 'Failed to request a GPU device. The browser might have restricted WebGPU access.';
@@ -324,12 +379,11 @@ function logStatus(container, message, isError = false) {
 
   const messageElement = document.createElement('div');
   messageElement.innerHTML = message;
+  messageElement.className = isError ? 'error-message' : 'success-message';
 
-  if (isError) {
-    messageElement.classList.add('error-message');
-  } else {
-    messageElement.classList.add('success-message');
-  }
+  // Add timestamp
+  const timestamp = new Date().toLocaleTimeString();
+  messageElement.innerHTML = `[${timestamp}] ${message}`;
 
   container.appendChild(messageElement);
 
