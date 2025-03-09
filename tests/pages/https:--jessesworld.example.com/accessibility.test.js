@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
 import { checkA11y, injectAxe } from '../../utils/accessibility-utils.js';
+import { expect, test } from '@playwright/test';
 import { formatPageId, mapTestUrl } from '../../utils/url-mapping.js';
 
 // Keep original URL as reference for reports, but use the mapped URL for testing

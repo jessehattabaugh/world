@@ -1,7 +1,7 @@
 /**
  * Contact visual tests
  */
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 const pageUrl = 'https://jessesworld.example.com/contact';
 const pageId = 'https:--jessesworld.example.com-contact';

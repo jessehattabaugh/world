@@ -1,8 +1,8 @@
+import { checkA11y, injectAxe } from '../../utils/accessibility-utils.js';
 /**
  * Contact accessibility tests
  */
-import { test, expect } from '@playwright/test';
-import { checkA11y, injectAxe } from '../../utils/accessibility-utils.js';
+import { expect, test } from '@playwright/test';
 
 const pageUrl = 'https://jessesworld.example.com/contact';
 
