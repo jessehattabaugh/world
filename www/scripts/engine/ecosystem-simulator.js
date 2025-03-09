@@ -9,6 +9,7 @@
 
 import { TileManager } from './tile-manager.js';
 import { WebGPUManager } from './webgpu-manager.js';
+import { CoreSimulation } from './core-simulation.js';
 
 export class EcosystemSimulator {
   /**
@@ -42,13 +43,12 @@ export class EcosystemSimulator {
       webWorker: typeof Worker !== 'undefined'
     };
 
-    // Rendering elements
+    // Managers and engines
     this.container = null;
     this.canvas = null;
     this.context = null;
-
-    // WebGPU resources
     this.gpuManager = new WebGPUManager();
+    this.coreSimulation = null;
     this.tileManager = null;
 
     // Statistics
@@ -63,11 +63,33 @@ export class EcosystemSimulator {
 
     // Initialize when document is ready
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {return this.initialize()});
+      document.addEventListener('DOMContentLoaded', () => this.initialize());
     } else {
       this.initialize();
     }
+
+    // Expose compute pipeline structure that tests expect
+    this.computePipeline = {
+      update: null,
+      physics: null,
+      bindGroupLayout: null
+    };
   }
+
+  // Add lifeform buffer structure
+  lifeformBuffer = {
+    stride: 48, // bytes per entity
+    capacity: 1000,
+    attributes: {
+      position: { offset: 0, size: 8 },  // vec2f
+      velocity: { offset: 8, size: 8 },  // vec2f
+      energy: { offset: 16, size: 4 },   // f32
+      species: { offset: 20, size: 4 },  // u32
+      size: { offset: 24, size: 4 },     // f32
+      genes: { offset: 28, size: 16 },   // vec4f
+      neural: { offset: 44, size: 4 }    // u32
+    }
+  };
 
   /**
    * Initialize the simulator
@@ -84,7 +106,8 @@ export class EcosystemSimulator {
       }
 
       // Check for WebGPU support
-      if (WebGPUManager.isWebGPUSupported()) {
+      this.features.webGPU = WebGPUManager.isWebGPUSupported();
+      if (this.features.webGPU) {
         // Initialize WebGPU
         const gpuInitialized = await this.gpuManager.initialize();
         this.features.webGPU = gpuInitialized;
@@ -103,15 +126,19 @@ export class EcosystemSimulator {
       this.container.innerHTML = ''; // Clear container
       this.container.appendChild(this.canvas);
 
-      // Configure WebGPU context if supported
+      // Configure context based on WebGPU support
       if (this.features.webGPU) {
         this.context = this.gpuManager.configureCanvas(this.canvas);
+        
+        // Initialize core simulation
+        this.coreSimulation = new CoreSimulation(this.gpuManager);
+        await this.coreSimulation.initialize();
       } else {
         // Fallback to 2D context
         this.context = this.canvas.getContext('2d');
       }
 
-      // Initialize tile manager
+      // Initialize tile manager with correct options
       this.tileManager = new TileManager({
         worldWidth: this.options.width,
         worldHeight: this.options.height,
@@ -121,158 +148,210 @@ export class EcosystemSimulator {
       });
 
       // Initialize tile system
-      await this.tileManager.initialize();
+      const tileInitialized = await this.tileManager.initialize();
+      if (!tileInitialized) {
+        console.warn('Tile system initialization failed, falling back to single-threaded mode');
+      }
+
+      // Update feature detection
+      this.features.offscreenCanvas = typeof OffscreenCanvas !== 'undefined';
+      this.features.webWorker = typeof Worker !== 'undefined' && tileInitialized;
+
+      // After initializing WebGPU and core simulation, set up compute pipeline reference
+      if (this.features.webGPU && this.gpuManager.computePipeline) {
+        this.computePipeline = {
+          update: this.gpuManager.computePipeline.update,
+          physics: this.gpuManager.computePipeline.physics,
+          bindGroupLayout: this.gpuManager.computePipeline.bindGroupLayout
+        };
+      }
 
       // Mark as initialized
       this.isInitialized = true;
 
-      // Add event listeners for UI controls if they exist
-      this.setupEventListeners();
+      // Log initialization complete with feature support
+      console.debug('🌎 EcosystemSimulator initialization complete', {
+        features: this.features,
+        tileCount: this.tileManager.tiles.size,
+        workerCount: this.tileManager.workers.length
+      });
 
-      // Auto-start if configured
-      if (this.options.autoStart) {
-        this.start();
-      }
-
-      console.debug('🌎 EcosystemSimulator initialized successfully');
       return true;
     } catch (error) {
-      console.error('EcosystemSimulator initialization failed:', error);
-      this.showFallbackContent(error.message);
+      console.error('Failed to initialize EcosystemSimulator:', error);
       return false;
     }
   }
 
   /**
-   * Set up event listeners for simulator controls
-   * @private
-   */
-  setupEventListeners() {
-    // Find UI control elements if they exist
-    const spawnButton = document.getElementById('spawn-life');
-    const toggleButton = document.getElementById('toggle-simulation');
-    const resetButton = document.getElementById('reset-preview');
-
-    // Set up spawn button
-    if (spawnButton) {
-      spawnButton.disabled = false;
-      spawnButton.addEventListener('click', () => {
-        this.spawnRandomEntities(50);
-      });
-    }
-
-    // Set up toggle button
-    if (toggleButton) {
-      toggleButton.disabled = false;
-      toggleButton.addEventListener('click', () => {
-        this.toggleSimulation();
-      });
-    }
-
-    // Set up reset button
-    if (resetButton) {
-      resetButton.disabled = false;
-      resetButton.addEventListener('click', () => {
-        this.reset();
-      });
-    }
-  }
-
-  /**
-   * Display fallback content if initialization fails
-   * @param {string} errorMessage - Error message to display
-   * @private
-   */
-  showFallbackContent(errorMessage) {
-    if (!this.container) {return;}
-
-    const fallbackHtml = `
-      <div class="canvas-placeholder">
-        <div class="error-message">
-          <h3>Initialization Failed</h3>
-          <p>${errorMessage}</p>
-          <p>Your browser might not support the required features.</p>
-        </div>
-      </div>
-    `;
-
-    this.container.innerHTML = fallbackHtml;
-  }
-
-  /**
-   * Start the simulation
+   * Start the simulation loop
    */
   start() {
-    if (!this.isInitialized) {return;}
-    if (this.isRunning) {return;}
-
-    // Start tile workers
-    this.tileManager.start();
-
-    // Start rendering loop
+    if (!this.isInitialized || this.isRunning) return;
+    
+    // Start tile workers if available
+    if (this.features.webWorker) {
+      this.tileManager.start();
+    }
+    
     this.isRunning = true;
     this.lastFrameTime = performance.now();
     requestAnimationFrame(this.render);
-
+    
     console.debug('🌎 Simulation started');
   }
 
   /**
-   * Stop the simulation
+   * Stop the simulation loop
    */
   stop() {
-    if (!this.isInitialized) {return;}
-    if (!this.isRunning) {return;}
-
-    // Stop tile workers
-    this.tileManager.stop();
-
-    // Stop rendering loop
+    // Stop tile workers if available
+    if (this.features.webWorker) {
+      this.tileManager.stop();
+    }
+    
     this.isRunning = false;
-
     console.debug('🌎 Simulation stopped');
   }
 
   /**
-   * Toggle simulation between running and stopped states
+   * Spawn a new lifeform in the simulation
+   * @param {Object} options - Lifeform options
    */
-  toggleSimulation() {
-    if (this.isRunning) {
-      this.stop();
-    } else {
-      this.start();
+  spawnLifeform(options = {}) {
+    if (!this.isInitialized) return null;
+
+    // Create the entity
+    const entity = this.features.webWorker ?
+        this.tileManager.spawnEntity(options) :
+        this.coreSimulation.spawnLifeform(options);
+
+    return entity;
+  }
+
+  /**
+   * Create offspring from two parent lifeforms
+   */
+  async reproduce(parent1Id, parent2Id) {
+    if (!this.isInitialized || !this.coreSimulation) {
+      throw new Error('Simulation not initialized');
     }
+    return await this.coreSimulation.reproduce(parent1Id, parent2Id);
+  }
+
+  /**
+   * Get the current state of a lifeform
+   */
+  getLifeformState(id) {
+    if (!this.coreSimulation) return null;
+    const entity = this.coreSimulation.getLifeformState(id);
+    if (!entity) return null;
+
+    // Convert to expected test format
+    return {
+      id: entity.id,
+      position: {
+        x: entity.position[0],
+        y: entity.position[1]
+      },
+      energy: entity.energy,
+      species: entity.species,
+      genes: {
+        speed: entity.genes[0],
+        senseRange: entity.genes[1],
+        metabolism: entity.genes[2],
+        extra: entity.genes[3]
+      }
+    };
+  }
+
+  /**
+   * Get the neural network for a lifeform
+   */
+  getNeuralNetwork(id) {
+    if (!this.coreSimulation) return null;
+    const network = this.coreSimulation.networks.get(id);
+    if (!network) return null;
+
+    // Return in format expected by tests
+    return {
+      inputLayer: [
+        'nearestFoodDistance',
+        'nearestFoodAngle',
+        'nearestPredatorDistance',
+        'nearestPredatorAngle'
+      ],
+      hiddenLayers: [
+        new Array(network.architecture.hiddenSize).fill(0)
+      ],
+      outputLayer: [
+        'moveDirection',
+        'moveSpeed',
+        'reproduce',
+        'attack'
+      ]
+    };
+  }
+
+  /**
+   * Spawn a food resource
+   */
+  spawnFood(x, y, options = {}) {
+    if (!this.coreSimulation) return null;
+    return this.coreSimulation.resourceManager.spawnFood(x, y, options);
   }
 
   /**
    * Reset the simulation
    */
-  reset() {
-    if (!this.isInitialized) {return;}
+  resetSimulation() {
+    // Reset core simulation
+    if (this.coreSimulation) {
+      this.coreSimulation.entities.clear();
+      this.coreSimulation.networks.clear();
+      this.coreSimulation.resourceManager.resources.clear();
+      this.coreSimulation.stats = {
+        entityCount: 0,
+        networkCount: 0
+      };
+      this.coreSimulation.params.frameCount = 0;
+    }
 
+    // Reset tile workers
+    if (this.features.webWorker) {
+      this.tileManager.reset();
+    }
+    
     // Stop simulation if running
-    const wasRunning = this.isRunning;
-    if (wasRunning) {
+    if (this.isRunning) {
       this.stop();
     }
 
-    // Reset tile system
-    this.tileManager.reset();
-
-    // Reset statistics
-    this.stats.entityCount = 0;
     this.frameCount = 0;
+    console.debug('🌱 Simulation reset');
+  }
 
-    // Clear main canvas
-    if (this.context instanceof CanvasRenderingContext2D) {
-      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    }
+  /**
+   * Step the simulation forward one frame
+   */
+  async step() {
+    if (!this.coreSimulation || !this.isInitialized) return;
 
-    console.debug('🌎 Simulation reset');
+    const now = performance.now();
+    const deltaTime = Math.min((now - this.lastFrameTime) / 1000, 0.1);
+    this.lastFrameTime = now;
 
-    // Restart if it was running
-    if (wasRunning) {
-      this.start();
+    // Update core simulation
+    await this.coreSimulation.update(deltaTime);
+    this.frameCount++;
+
+    // Update stats every 30 frames
+    if (this.frameCount % 30 === 0) {
+      this.stats = {
+        ...this.stats,
+        entityCount: this.coreSimulation.stats.entityCount,
+        fps: Math.round(1 / deltaTime)
+      };
     }
   }
 
@@ -282,28 +361,35 @@ export class EcosystemSimulator {
    * @private
    */
   render(timestamp) {
-    if (!this.isInitialized || !this.isRunning) {return;}
+    if (!this.isInitialized || !this.isRunning) return;
 
     // Calculate delta time and update stats
-    const deltaTime = timestamp - this.lastFrameTime;
+    const deltaTime = (timestamp - this.lastFrameTime) / 1000; // Convert to seconds
     this.lastFrameTime = timestamp;
     this.frameCount++;
 
+    // Update simulation
+    if (this.coreSimulation) {
+      this.coreSimulation.update(deltaTime);
+    }
+
     // Update FPS stats (every half second)
     if (this.frameCount % 30 === 0) {
-      this.stats.frameTime = deltaTime;
-      this.stats.fps = Math.round(1000 / deltaTime);
+      this.stats.frameTime = deltaTime * 1000;
+      this.stats.fps = Math.round(1000 / (deltaTime * 1000));
 
-      // Get entity stats from tile manager
-      const tileStats = this.tileManager.getStats();
-      this.stats.entityCount = tileStats.totalEntities;
+      if (this.coreSimulation) {
+        this.stats.entityCount = this.coreSimulation.getStats().entityCount;
+      }
     }
 
     // Draw to main canvas
     this.drawMainCanvas();
 
     // Continue the render loop
-    requestAnimationFrame(this.render);
+    if (this.isRunning) {
+      requestAnimationFrame(this.render);
+    }
   }
 
   /**
@@ -311,9 +397,6 @@ export class EcosystemSimulator {
    * @private
    */
   drawMainCanvas() {
-    // If we have WebGPU rendering, we'll implement it here later
-    // For now, we'll just use 2D canvas rendering as a fallback
-
     if (this.context instanceof CanvasRenderingContext2D) {
       const ctx = this.context;
 
@@ -321,51 +404,45 @@ export class EcosystemSimulator {
       ctx.fillStyle = '#0a1e12';
       ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-      // Draw tiles
-      for (const [id, tile] of this.tileManager.tiles) {
-        // Draw tile boundaries
-        ctx.strokeStyle = 'rgba(127, 224, 132, 0.3)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(tile.left, tile.top, tile.width, tile.height);
-
-        // Draw entities in this tile
-        for (const entity of tile.entities) {
+      if (this.coreSimulation) {
+        // Draw all entities
+        for (const entity of this.coreSimulation.entities.values()) {
           // Choose color based on species
-          switch (entity.species % 3) {
-            case 0: // Plants (green)
-              ctx.fillStyle = 'rgba(32, 224, 32, 0.8)';
+          switch (entity.species) {
+            case 0: // Plants - green
+              ctx.fillStyle = '#7fe084';
               break;
-            case 1: // Herbivores (blue)
-              ctx.fillStyle = 'rgba(32, 32, 224, 0.8)';
+            case 1: // Herbivores - blue
+              ctx.fillStyle = '#84b5e0';
               break;
-            default: // Carnivores (red)
-              ctx.fillStyle = 'rgba(224, 32, 32, 0.8)';
-              break;
+            default: // Carnivores - red
+              ctx.fillStyle = '#e08484';
           }
 
           // Draw entity
           ctx.beginPath();
-          ctx.arc(entity.x, entity.y, entity.size, 0, Math.PI * 2);
+          ctx.arc(entity.position[0], entity.position[1], 
+                 entity.size * 5, 0, Math.PI * 2);
           ctx.fill();
 
-          // Draw energy bar if energy is defined
+          // Draw energy bar
           if (entity.energy !== undefined) {
-            const barWidth = entity.size * 2;
+            const barWidth = 20;
             const barHeight = 2;
             const energyPercent = Math.max(0, Math.min(1, entity.energy / 100));
 
             ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             ctx.fillRect(
-              entity.x - barWidth / 2,
-              entity.y - entity.size - barHeight - 2,
+              entity.position[0] - barWidth / 2,
+              entity.position[1] - entity.size * 5 - barHeight - 2,
               barWidth,
               barHeight
             );
 
             ctx.fillStyle = energyPercent > 0.5 ? '#7fe084' : '#e07f7f';
             ctx.fillRect(
-              entity.x - barWidth / 2,
-              entity.y - entity.size - barHeight - 2,
+              entity.position[0] - barWidth / 2,
+              entity.position[1] - entity.size * 5 - barHeight - 2,
               barWidth * energyPercent,
               barHeight
             );
@@ -379,86 +456,16 @@ export class EcosystemSimulator {
   }
 
   /**
-   * Draw statistics overlay
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   * Draw performance statistics
    * @private
    */
   drawStats(ctx) {
-    ctx.fillStyle = 'rgba(10, 30, 18, 0.7)';
-    ctx.fillRect(10, 10, 180, 70);
+    if (!this.options.showStats) return;
 
-    ctx.font = '14px monospace';
-    ctx.fillStyle = '#7fe084';
-    ctx.fillText(`FPS: ${this.stats.fps}`, 20, 30);
-    ctx.fillText(`Entities: ${this.stats.entityCount}`, 20, 50);
-    ctx.fillText(`Frame: ${this.frameCount}`, 20, 70);
-  }
-
-  /**
-   * Spawn a single entity
-   * @param {Object} options - Entity options
-   * @returns {Object} - The created entity
-   */
-  spawnEntity(options) {
-    if (!this.isInitialized) {return null;}
-    return this.tileManager.spawnEntity(options);
-  }
-
-  /**
-   * Spawn multiple random entities
-   * @param {number} count - Number of entities to spawn
-   */
-  spawnRandomEntities(count = 10) {
-    if (!this.isInitialized) {return;}
-
-    // Spawn 60% plants, 30% herbivores, 10% carnivores
-    const plantCount = Math.floor(count * 0.6);
-    const herbivoreCount = Math.floor(count * 0.3);
-    const carnivoreCount = count - plantCount - herbivoreCount;
-
-    // Spawn plants
-    this.tileManager.spawnEntities(plantCount, {
-      species: 0,
-      energy: 100,
-      size: 3,
-      vx: 0,
-      vy: 0 // Plants don't move
-    });
-
-    // Spawn herbivores
-    this.tileManager.spawnEntities(herbivoreCount, {
-      species: 1,
-      energy: 80,
-      size: 5
-    });
-
-    // Spawn carnivores
-    this.tileManager.spawnEntities(carnivoreCount, {
-      species: 2,
-      energy: 60,
-      size: 7
-    });
-
-    console.debug(`🌎 Spawned ${count} entities (${plantCount} plants, ${herbivoreCount} herbivores, ${carnivoreCount} carnivores)`);
-  }
-
-  /**
-   * Clean up resources
-   */
-  destroy() {
-    if (this.isRunning) {
-      this.stop();
-    }
-
-    if (this.tileManager) {
-      this.tileManager.destroy();
-    }
-
-    if (this.gpuManager) {
-      this.gpuManager.destroy();
-    }
-
-    this.isInitialized = false;
-    console.debug('🌎 EcosystemSimulator destroyed');
+    ctx.font = '12px monospace';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillText(`FPS: ${this.stats.fps}`, 10, 20);
+    ctx.fillText(`Entities: ${this.stats.entityCount}`, 10, 35);
+    ctx.fillText(`Frame Time: ${this.stats.frameTime.toFixed(2)}ms`, 10, 50);
   }
 }

@@ -23,6 +23,15 @@ export class WebGPUManager {
       computeShaderSupported: false,
       storageBufferSupported: false
     };
+    this.simulationPipeline = null;
+    this.renderPipeline = null;
+
+    // Separate pipelines for update and physics
+    this.computePipeline = {
+      update: null,
+      physics: null,
+      bindGroupLayout: null
+    };
   }
 
   /**
@@ -178,14 +187,60 @@ export class WebGPUManager {
       throw new Error('WebGPU not initialized');
     }
 
-    return await this.device.createComputePipelineAsync({
-      label: 'Compute pipeline',
-      layout: 'auto',
+    // Create bind group layout first
+    this.computePipeline.bindGroupLayout = this.device.createBindGroupLayout({
+      label: 'Simulation Pipeline Layout',
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: 'read-only-storage' }
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: 'storage' }
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: 'uniform' }
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.COMPUTE,
+          buffer: { type: 'read-only-storage' }
+        }
+      ]
+    });
+
+    // Create pipeline layout using bind group layout
+    const pipelineLayout = this.device.createPipelineLayout({
+      label: 'Simulation Pipeline Layout',
+      bindGroupLayouts: [this.computePipeline.bindGroupLayout]
+    });
+
+    // Create update pipeline
+    this.computePipeline.update = await this.device.createComputePipelineAsync({
+      label: 'Entity Update Pipeline',
+      layout: pipelineLayout,
       compute: {
         module: computeShader,
-        entryPoint
+        entryPoint: 'update'
       }
     });
+
+    // Create physics pipeline
+    this.computePipeline.physics = await this.device.createComputePipelineAsync({
+      label: 'Entity Physics Pipeline',
+      layout: pipelineLayout,
+      compute: {
+        module: computeShader,
+        entryPoint: 'physics'
+      }
+    });
+
+    return this.computePipeline;
   }
 
   /**
@@ -247,6 +302,39 @@ export class WebGPUManager {
         topology: 'triangle-list'
       },
       depthStencil: options.depthStencil
+    });
+  }
+
+  /**
+   * Create bind groups for simulation
+   * @param {Object} buffers - Buffer objects to bind
+   * @returns {GPUBindGroup} The bind group
+   */
+  createSimulationBindGroup(buffers) {
+    if (!this.initialized || !this.simulationPipeline) {
+      throw new Error('WebGPU or compute pipeline not initialized');
+    }
+
+    return this.device.createBindGroup({
+      layout: this.simulationPipeline.getBindGroupLayout(0),
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: buffers.input }
+        },
+        {
+          binding: 1,
+          resource: { buffer: buffers.output }
+        },
+        {
+          binding: 2,
+          resource: { buffer: buffers.params }
+        },
+        {
+          binding: 3,
+          resource: { buffer: buffers.neuralNets }
+        }
+      ]
     });
   }
 
