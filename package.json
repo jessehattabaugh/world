@@ -25,7 +25,7 @@
 		"prod": "TEST_ENV=production playwright test --project=chromium",
 		"url": "BASE_URL=${TEST_URL} playwright test",
 		"quick": "npm-run-all --serial clean lint local && npm run report",
-		"clean": "node bin/snapshots-clean.js",
+		"clean": "rimraf **/*.tmp.* test-results playwright-report blob-report",
 		"debug": "playwright test --debug",
 		"ui": "playwright test --ui",
 		"report": "playwright show-report",
@@ -45,7 +45,7 @@
 		"accept-shots": "playwright test --update-snapshots",
 		"accept-all": "npm-run-all --serial accept-perf accept-shots",
 		"compare-perf": "node bin/compare-perf.js",
-		"compare-shots": "node bin/compare-shots.js",
+		"compare-shots": "BASE_URL=${BASE_URL:-http://localhost:3000} node bin/compare-shots.js --output=\"snapshots/diffs/*.tmp.diff.png\"",
 		"compare-all": "npm-run-all --parallel compare-perf compare-shots",
 		"diff-report": "npm run compare-all && node bin/generate-diff-report.js"
 	},

@@ -1,33 +1,20 @@
-# Dependencies
 node_modules
-npm-debug.log*
 
-# Build outputs
-/lighthouse-report.html
-/.netlify
-
-# Environment variables
+# local environment variables
 .env*
 
-# Playwright testing
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-
-# Test baseline files
-/snapshots/*
-!/snapshots/*baseline*
-!/snapshots/README.md
-/performance/*
-!/performance/*baseline*
-!/performance/README.md
-
-# Temporary test comparison files
+# temporary files
 *.tmp.*
 
-# Temporary files
-.DS_Store
-Thumbs.db
+# perf audit logs
+/.lighthouseci/
 
-reports
+# I don't know what to do with these yet
+/reports/
+
+# I don't know why any of these get created
+# ... but I don't want them in git
+/test-results/
+/.netlify
+/playwright-report/
+/playwright/.cache/
