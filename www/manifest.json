@@ -13,13 +13,13 @@
 		{
 			"purpose": "any maskable",
 			"sizes": "192x192",
-			"src": "/images/icon-192.png",
+			"src": "https://jessesworld.example.com/images/icon-192.png",
 			"type": "image/png"
 		},
 		{
 			"purpose": "any maskable",
 			"sizes": "512x512",
-			"src": "/images/icon-512.png",
+			"src": "https://jessesworld.example.com/images/icon-512.png",
 			"type": "image/png"
 		}
 	],
@@ -30,17 +30,17 @@
 		{
 			"form_factor": "wide",
 			"sizes": "1280x800",
-			"src": "/screenshots/desktop.png",
+			"src": "https://jessesworld.example.com/screenshots/desktop.png",
 			"type": "image/png"
 		},
 		{
 			"form_factor": "narrow",
 			"sizes": "750x1334",
-			"src": "/screenshots/mobile.png",
+			"src": "https://jessesworld.example.com/screenshots/mobile.png",
 			"type": "image/png"
 		}
 	],
-	"short_name": "JW",
+	"short_name": "jessesworld",
 	"start_url": "/",
 	"theme_color": "#000000"
 }
