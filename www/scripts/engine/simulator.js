@@ -25,6 +25,8 @@
  *   autoStart: true,         // Start simulation automatically (default: false)
  *   showStats: true,         // Show performance stats (default: false)
  *   initialLifeforms: 10,    // Number of lifeforms to create at start (default: 0)
+ *   tileSize: 256,           // Size of each world tile in pixels (default: 256)
+ *   workerCount: 4,          // Maximum number of web workers to use (default: navigator.hardwareConcurrency or 4)
  * });
  * ```
  *
@@ -50,6 +52,8 @@ class PixelBiomeSimulator {
    * @param {boolean} [options.autoStart=false] - Whether to start the simulation immediately
    * @param {boolean} [options.showStats=false] - Whether to show performance statistics
    * @param {number} [options.initialLifeforms=0] - Number of random lifeforms to create at start
+   * @param {number} [options.tileSize=256] - Size of each world tile in pixels
+   * @param {number} [options.workerCount] - Maximum number of web workers to use (defaults to hardware concurrency)
    */
   constructor(canvasId = 'simulator-preview-canvas', options = {}) {
     this.canvasId = canvasId;
@@ -67,6 +71,20 @@ class PixelBiomeSimulator {
     this.autoStart = options.autoStart || false;
     this.initialLifeforms = options.initialLifeforms || 0;
 
+    // Tile-based world configuration
+    this.tileSize = options.tileSize || 256;
+    this.workerCount = options.workerCount || (navigator.hardwareConcurrency || 4);
+    this.tiles = [];
+    this.workers = [];
+
+    // Track feature support
+    this.features = {
+      webGPU: false,
+      offscreenCanvas: false,
+      webWorker: typeof Worker !== 'undefined',
+      structuredCloning: typeof window.structuredClone !== 'undefined'
+    };
+
     // Bind methods
     this.initialize = this.initialize.bind(this);
     this.startSimulation = this.startSimulation.bind(this);
@@ -75,80 +93,340 @@ class PixelBiomeSimulator {
     this.spawnLifeform = this.spawnLifeform.bind(this);
     this.resetSimulation = this.resetSimulation.bind(this);
     this.render = this.render.bind(this);
+    this.initTiles = this.initTiles.bind(this);
+    this.initWorkers = this.initWorkers.bind(this);
 
     // Initialize when document is ready
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.initialize());
+      document.addEventListener('DOMContentLoaded', this.initialize);
     } else {
       this.initialize();
     }
   }
 
+  /**
+   * Initialize the simulator with WebGPU and set up tiles with web workers
+   */
   async initialize() {
     console.debug('🌱 Initializing PixelBiome simulator... 🚀 initialize');
 
     try {
-      // Check for WebGPU support
-      if (!navigator.gpu) {
-        console.error('🌱 WebGPU not supported! 🔥 initialize');
-        this.showFallbackContent();
-        return;
-      }
-
-      // Get canvas element
+      // Get the container element
       const container = document.getElementById(this.canvasId);
       if (!container) {
-        console.warn('🌱 Canvas container not found! ⚠️ initialize');
-        return;
+        throw new Error(`Container element with ID "${this.canvasId}" not found.`);
       }
 
-      // Clear any placeholder content
-      container.innerHTML = '';
+      // Check for WebGPU support
+      if (!navigator.gpu) {
+        throw new Error('WebGPU is not supported in this browser');
+      }
+      this.features.webGPU = true;
 
-      // Create canvas element
+      // Check for OffscreenCanvas support
+      this.features.offscreenCanvas = typeof OffscreenCanvas !== 'undefined';
+
+      // Create main canvas element
       this.canvas = document.createElement('canvas');
       this.canvas.width = this.width;
       this.canvas.height = this.height;
+      this.canvas.style.width = '100%';
+      this.canvas.style.height = '100%';
+      this.canvas.style.display = 'block';
+      container.innerHTML = ''; // Clear the container
       container.appendChild(this.canvas);
 
-      // Get GPU adapter and device
-      const adapter = await navigator.gpu.requestAdapter();
+      // Request adapter and device
+      const adapter = await navigator.gpu.requestAdapter({
+        powerPreference: 'high-performance'
+      });
+
       if (!adapter) {
-        throw new Error('No appropriate GPUAdapter found!');
+        throw new Error('WebGPU adapter not available');
       }
 
       this.device = await adapter.requestDevice();
-      this.context = this.canvas.getContext('webgpu');
 
-      // Configure the swap chain
-      const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+      // Set up WebGPU context on the main canvas
+      this.context = this.canvas.getContext('webgpu');
+      const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+
       this.context.configure({
         device: this.device,
-        format: presentationFormat,
-        alphaMode: 'premultiplied',
+        format: canvasFormat,
+        alphaMode: 'premultiplied'
       });
 
-      // Initialize shaders
+      // Initialize the world tiles
+      await this.initTiles();
+
+      // Initialize the web workers
+      if (this.features.webWorker) {
+        await this.initWorkers();
+      }
+
+      // Initialize shaders for the main canvas
       await this.initializeShaders();
 
-      // Enable UI controls
+      // Enable UI controls now that we're initialized
       this.enableControls();
-
-      // Mark as initialized
       this.isInitialized = true;
-      console.info('🌱 PixelBiome simulator initialized successfully! ✅ initialize');
 
-      // Display startup scene
-      this.render();
+      // Auto-start simulation if configured
+      if (this.autoStart) {
+        this.startSimulation();
+      }
+
+      console.debug('🌱 PixelBiome simulator initialized successfully ✅ initialize');
     } catch (error) {
-      console.error(`🌱 Failed to initialize WebGPU: ${error} 🔥 initialize`);
+      console.error('Failed to initialize PixelBiome simulator:', error);
       this.showFallbackContent(error.message);
     }
   }
 
+  /**
+   * Initialize the world tiles based on the world size and tile size
+   * @private
+   */
+  async initTiles() {
+    // Calculate number of tiles in each dimension
+    const tilesX = Math.ceil(this.width / this.tileSize);
+    const tilesY = Math.ceil(this.height / this.tileSize);
+
+    console.debug(`🌱 Creating ${tilesX}x${tilesY} world tiles...`);
+
+    // Create tile objects with their coordinates and offscreen canvases
+    for (let y = 0; y < tilesY; y++) {
+      for (let x = 0; x < tilesX; x++) {
+        // Calculate actual pixel bounds for this tile
+        const left = x * this.tileSize;
+        const top = y * this.tileSize;
+        const right = Math.min((x + 1) * this.tileSize, this.width);
+        const bottom = Math.min((y + 1) * this.tileSize, this.height);
+        const tileWidth = right - left;
+        const tileHeight = bottom - top;
+
+        let offscreenCanvas = null;
+        let renderContext = null;
+
+        // Create OffscreenCanvas for this tile if supported
+        if (this.features.offscreenCanvas) {
+          offscreenCanvas = new OffscreenCanvas(tileWidth, tileHeight);
+
+          // Configure WebGPU on the offscreen canvas if needed
+          // Note: For WebGPU + OffscreenCanvas to work, we'll need to transfer it to a worker
+          renderContext = offscreenCanvas.getContext('2d'); // Fallback to 2D context for now
+        }
+
+        // Create tile object
+        const tile = {
+          id: `tile-${x}-${y}`,
+          x, y,
+          left, top, right, bottom,
+          width: tileWidth,
+          height: tileHeight,
+          canvas: offscreenCanvas,
+          context: renderContext,
+          // Worker will be assigned later
+          worker: null,
+          // Entities in this tile (managed by its worker)
+          entities: [],
+          // State of the tile
+          ready: false,
+          active: true,
+          lastUpdated: 0,
+          neighborTiles: []
+        };
+
+        this.tiles.push(tile);
+      }
+    }
+
+    // Set up neighbor relationships between tiles for communication
+    for (const tile of this.tiles) {
+      // Find all adjacent tiles
+      tile.neighborTiles = this.tiles.filter(other => {
+        // A tile is a neighbor if it's adjacent (including diagonals)
+        return Math.abs(other.x - tile.x) <= 1 &&
+               Math.abs(other.y - tile.y) <= 1 &&
+               other !== tile;
+      });
+    }
+
+    console.debug(`🌱 Created ${this.tiles.length} world tiles ✅`);
+  }
+
+  /**
+   * Initialize web workers for processing the world tiles
+   * @private
+   */
+  async initWorkers() {
+    // Calculate optimal number of workers
+    // Use at most as many workers as we have tiles, but no more than workerCount
+    const optimalWorkerCount = Math.min(this.tiles.length, this.workerCount);
+
+    console.debug(`🌱 Creating ${optimalWorkerCount} web workers...`);
+
+    // Create workers
+    for (let i = 0; i < optimalWorkerCount; i++) {
+      try {
+        const worker = new Worker('/scripts/engine/tile-worker.js', { type: 'module' });
+
+        // Set up message handler for this worker
+        worker.onmessage = (event) => this.handleWorkerMessage(worker, event);
+
+        // Handle worker errors
+        worker.onerror = (error) => {
+          console.error(`Worker ${i} error:`, error);
+        };
+
+        // Store the worker
+        this.workers.push({
+          id: i,
+          worker: worker,
+          assignedTiles: [], // Will contain references to assigned tiles
+          busy: false,
+          lastMessage: 0
+        });
+
+        // Initialize the worker
+        worker.postMessage({
+          type: 'init',
+          workerId: i,
+          worldWidth: this.width,
+          worldHeight: this.height,
+          tileSize: this.tileSize,
+          features: this.features
+        });
+      } catch (error) {
+        console.error(`Failed to create worker ${i}:`, error);
+      }
+    }
+
+    // Assign tiles to workers (distribute evenly)
+    for (let i = 0; i < this.tiles.length; i++) {
+      const tile = this.tiles[i];
+      const workerIndex = i % this.workers.length;
+      const workerInfo = this.workers[workerIndex];
+
+      // Assign this tile to the worker
+      tile.worker = workerInfo;
+      workerInfo.assignedTiles.push(tile);
+
+      // If OffscreenCanvas is supported and the tile has a canvas, transfer it to the worker
+      if (this.features.offscreenCanvas && tile.canvas) {
+        const transferableCanvas = tile.canvas;
+
+        // Send message to worker with the canvas
+        workerInfo.worker.postMessage({
+          type: 'assignTile',
+          tileId: tile.id,
+          tileInfo: {
+            id: tile.id,
+            x: tile.x,
+            y: tile.y,
+            left: tile.left,
+            top: tile.top,
+            width: tile.width,
+            height: tile.height,
+            neighborIds: tile.neighborTiles.map(n => n.id)
+          },
+          // Transfer the canvas
+          canvas: transferableCanvas
+        }, [transferableCanvas]);
+
+        // The original canvas is now detached as it's been transferred
+        tile.canvas = null;
+      } else {
+        // Send message to worker without canvas transfer
+        workerInfo.worker.postMessage({
+          type: 'assignTile',
+          tileId: tile.id,
+          tileInfo: {
+            id: tile.id,
+            x: tile.x,
+            y: tile.y,
+            left: tile.left,
+            top: tile.top,
+            width: tile.width,
+            height: tile.height,
+            neighborIds: tile.neighborTiles.map(n => n.id)
+          }
+        });
+      }
+    }
+
+    console.debug(`🌱 Created and assigned ${this.workers.length} web workers ✅`);
+  }
+
+  /**
+   * Handle messages from web workers
+   * @param {Worker} worker - The worker that sent the message
+   * @param {MessageEvent} event - The message event
+   * @private
+   */
+  handleWorkerMessage(worker, event) {
+    const { type, tileId, ...data } = event.data;
+
+    switch (type) {
+      case 'tileReady':
+        // Mark the tile as ready for rendering
+        const tile = this.tiles.find(t => t.id === tileId);
+        if (tile) {
+          tile.ready = true;
+          console.debug(`🌱 Tile ${tileId} ready`);
+        }
+        break;
+
+      case 'tileUpdate':
+        // Handle tile update data (e.g., entity positions, state changes)
+        // This is used to update the main canvas from worker-processed data
+        this.updateTileData(tileId, data);
+        break;
+
+      case 'workerStatus':
+        // Update status of the worker
+        const workerInfo = this.workers.find(w => w.worker === worker);
+        if (workerInfo) {
+          workerInfo.busy = data.busy;
+          workerInfo.lastMessage = Date.now();
+          // Additional worker status handling if needed
+        }
+        break;
+
+      default:
+        console.warn(`Unknown worker message type: ${type}`);
+    }
+  }
+
+  /**
+   * Update the simulation data for a specific tile
+   * @param {string} tileId - ID of the tile to update
+   * @param {Object} data - Update data from the worker
+   * @private
+   */
+  updateTileData(tileId, data) {
+    const tile = this.tiles.find(t => t.id === tileId);
+    if (!tile) return;
+
+    // Update entity data for this tile
+    if (data.entities) {
+      tile.entities = data.entities;
+    }
+
+    // Update timestamp
+    tile.lastUpdated = Date.now();
+
+    // Additional tile data handling as needed
+  }
+
+  /**
+   * Create initial shader modules
+   */
   async initializeShaders() {
     // Create initial shader modules
     this.simulationShader = this.device.createShaderModule({
+      label: 'Main simulation shader',
       code: `
         @group(0) @binding(0) var<storage, read> input_data: array<f32>;
         @group(0) @binding(1) var<storage, read_write> output_data: array<f32>;
@@ -189,207 +467,108 @@ class PixelBiomeSimulator {
         }
       `,
     });
-
-    this.renderShader = this.device.createShaderModule({
-      code: `
-        struct VertexInput {
-          @location(0) position: vec2<f32>,
-          @location(1) texCoord: vec2<f32>,
-        };
-
-        struct VertexOutput {
-          @builtin(position) position: vec4<f32>,
-          @location(0) texCoord: vec2<f32>,
-        };
-
-        @vertex
-        fn vertexMain(
-          @builtin(vertex_index) vertexIndex: u32
-        ) -> VertexOutput {
-          var pos = array<vec2<f32>, 4>(
-            vec2<f32>(-1.0, -1.0),
-            vec2<f32>(1.0, -1.0),
-            vec2<f32>(-1.0, 1.0),
-            vec2<f32>(1.0, 1.0)
-          );
-
-          var texCoords = array<vec2<f32>, 4>(
-            vec2<f32>(0.0, 1.0),
-            vec2<f32>(1.0, 1.0),
-            vec2<f32>(0.0, 0.0),
-            vec2<f32>(1.0, 0.0)
-          );
-
-          var output: VertexOutput;
-          output.position = vec4<f32>(pos[vertexIndex], 0.0, 1.0);
-          output.texCoord = texCoords[vertexIndex];
-          return output;
-        }
-
-        @group(0) @binding(0) var texSampler: sampler;
-        @group(0) @binding(1) var outputTex: texture_2d<f32>;
-
-        @fragment
-        fn fragmentMain(@location(0) texCoord: vec2<f32>) -> @location(0) vec4<f32> {
-          return textureSample(outputTex, texSampler, texCoord);
-        }
-      `,
-    });
-
-    // Create buffers
-    const bufferSize = this.width * this.height * 4 * Float32Array.BYTES_PER_ELEMENT;
-    this.inputBuffer = this.device.createBuffer({
-      size: bufferSize,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
-
-    this.outputBuffer = this.device.createBuffer({
-      size: bufferSize,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-    });
-
-    this.uniformBuffer = this.device.createBuffer({
-      size: 16, // 4 f32 values (deltaTime, width, height, frameCount)
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    // Create pipeline
-    this.computePipeline = this.device.createComputePipeline({
-      layout: 'auto',
-      compute: {
-        module: this.simulationShader,
-        entryPoint: 'computeMain',
-      },
-    });
-
-    // Create bind group
-    this.computeBindGroup = this.device.createBindGroup({
-      layout: this.computePipeline.getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: this.inputBuffer },
-        },
-        {
-          binding: 1,
-          resource: { buffer: this.outputBuffer },
-        },
-        {
-          binding: 2,
-          resource: { buffer: this.uniformBuffer },
-        },
-      ],
-    });
-
-    // Create texture for rendering
-    this.texture = this.device.createTexture({
-      size: [this.width, this.height],
-      format: 'rgba8unorm',
-      usage:
-        GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.COPY_DST |
-        GPUTextureUsage.RENDER_ATTACHMENT,
-    });
-
-    this.sampler = this.device.createSampler({
-      magFilter: 'linear',
-      minFilter: 'linear',
-    });
-
-    // Create render pipeline
-    this.renderPipeline = this.device.createRenderPipeline({
-      layout: 'auto',
-      vertex: {
-        module: this.renderShader,
-        entryPoint: 'vertexMain',
-      },
-      fragment: {
-        module: this.renderShader,
-        entryPoint: 'fragmentMain',
-        targets: [
-          {
-            format: navigator.gpu.getPreferredCanvasFormat(),
-          },
-        ],
-      },
-      primitive: {
-        topology: 'triangle-strip',
-        stripIndexFormat: 'uint32',
-      },
-    });
-
-    this.renderBindGroup = this.device.createBindGroup({
-      layout: this.renderPipeline.getBindGroupLayout(0),
-      entries: [
-        {
-          binding: 0,
-          resource: this.sampler,
-        },
-        {
-          binding: 1,
-          resource: this.texture.createView(),
-        },
-      ],
-    });
   }
 
+  /**
+   * Display fallback content if WebGPU initialization fails
+   * @param {string} errorMessage - Error message to display
+   * @private
+   */
   showFallbackContent(errorMessage = '') {
     const container = document.getElementById(this.canvasId);
     if (!container) return;
 
-    container.innerHTML = `
-      <div class="fallback-content">
+    // Create fallback content
+    const fallback = document.createElement('div');
+    fallback.className = 'canvas-placeholder';
+    fallback.innerHTML = `
+      <div class="error-message">
         <h3>WebGPU Not Available</h3>
-        <p>Your browser doesn't support WebGPU, which is required for this simulator.</p>
-        <p>Please try using Chrome 113+ or Edge 113+, or enable WebGPU in your browser's flags.</p>
-        ${errorMessage ? `<p class="error-message">Error: ${errorMessage}</p>` : ''}
+        <p>${errorMessage || 'Your browser does not support WebGPU, or it may be disabled.'}</p>
+        <p>For the best experience, please try Chrome 113+, Edge 113+, or another browser with WebGPU enabled.</p>
+        <p><small>Support status: ${JSON.stringify(this.features)}</small></p>
       </div>
     `;
+
+    // Replace container contents
+    container.innerHTML = '';
+    container.appendChild(fallback);
   }
 
+  /**
+   * Enable UI controls for the simulator
+   * @private
+   */
   enableControls() {
-    // Enable UI controls
+    // Enable spawn button
     const spawnButton = document.getElementById('spawn-life');
-    const toggleButton = document.getElementById('toggle-simulation');
-    const resetButton = document.getElementById('reset-preview');
-
     if (spawnButton) {
       spawnButton.disabled = false;
       spawnButton.addEventListener('click', this.spawnLifeform);
     }
 
+    // Enable toggle button
+    const toggleButton = document.getElementById('toggle-simulation');
     if (toggleButton) {
       toggleButton.disabled = false;
       toggleButton.addEventListener('click', this.toggleSimulation);
     }
 
+    // Enable reset button
+    const resetButton = document.getElementById('reset-preview');
     if (resetButton) {
       resetButton.disabled = false;
       resetButton.addEventListener('click', this.resetSimulation);
     }
   }
 
+  /**
+   * Start the simulation loop
+   */
   startSimulation() {
-    if (!this.isInitialized) return;
+    if (this.isRunning) return;
 
-    if (!this.isRunning) {
-      this.isRunning = true;
-      this.lastFrameTime = performance.now();
-      this.animationId = requestAnimationFrame(this.render);
-      console.debug('🌱 Simulation started 🏁 startSimulation');
-    }
+    this.isRunning = true;
+    this.lastFrameTime = performance.now();
+    this.animationFrameId = requestAnimationFrame(this.render);
+
+    // Notify all workers to start updating their tiles
+    this.workers.forEach(workerInfo => {
+      workerInfo.worker.postMessage({
+        type: 'control',
+        action: 'start'
+      });
+    });
+
+    console.debug('🌱 Simulation started ▶️');
   }
 
+  /**
+   * Stop the simulation loop
+   */
   stopSimulation() {
-    if (this.isRunning) {
-      this.isRunning = false;
-      if (this.animationId) {
-        cancelAnimationFrame(this.animationId);
-      }
-      console.debug('🌱 Simulation stopped ⏹️ stopSimulation');
+    if (!this.isRunning) return;
+
+    this.isRunning = false;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
+
+    // Notify all workers to stop updating their tiles
+    this.workers.forEach(workerInfo => {
+      workerInfo.worker.postMessage({
+        type: 'control',
+        action: 'stop'
+      });
+    });
+
+    console.debug('🌱 Simulation stopped ⏸');
   }
 
+  /**
+   * Toggle between running and paused states
+   */
   toggleSimulation() {
     if (this.isRunning) {
       this.stopSimulation();
@@ -398,109 +577,167 @@ class PixelBiomeSimulator {
     }
   }
 
+  /**
+   * Add a new lifeform to the simulation at a random location
+   */
   spawnLifeform() {
     if (!this.isInitialized) return;
 
+    // Generate a random position within the world
     const x = Math.floor(Math.random() * this.width);
     const y = Math.floor(Math.random() * this.height);
 
-    this.lifeforms.push({
-      x, y,
-      energy: 100,
-      genome: Array.from({length: 16}, () => Math.random()),
-      type: Math.floor(Math.random() * 3) // 0 = plant, 1 = herbivore, 2 = carnivore
+    // Determine which tile this position belongs to
+    const tileX = Math.floor(x / this.tileSize);
+    const tileY = Math.floor(y / this.tileSize);
+
+    // Find the tile that contains this position
+    const tile = this.tiles.find(t => t.x === tileX && t.y === tileY);
+
+    if (tile && tile.worker) {
+      // Send message to the worker to spawn a lifeform in this tile
+      tile.worker.worker.postMessage({
+        type: 'spawnEntity',
+        tileId: tile.id,
+        entity: {
+          type: 'lifeform',
+          x: x - tile.left, // Adjust position to be relative to tile
+          y: y - tile.top,
+          energy: 100,
+          species: Math.floor(Math.random() * 5), // Random species type
+          size: 5 + Math.random() * 5,
+          // Add more properties as needed
+        }
+      });
+
+      console.debug(`🌱 Spawned lifeform at (${x}, ${y}) in tile ${tile.id}`);
+    }
+  }
+
+  /**
+   * Reset the simulation by clearing all lifeforms and resources
+   */
+  resetSimulation() {
+    if (!this.isInitialized) return;
+
+    // Stop the simulation first
+    const wasRunning = this.isRunning;
+    if (wasRunning) {
+      this.stopSimulation();
+    }
+
+    // Send reset command to all workers
+    this.workers.forEach(workerInfo => {
+      workerInfo.worker.postMessage({
+        type: 'control',
+        action: 'reset'
+      });
     });
 
-    console.debug(`🌱 Lifeform spawned at (${x}, ${y}) 🐣 spawnLifeform`);
+    // Clear local entity caches
+    this.tiles.forEach(tile => {
+      tile.entities = [];
+    });
 
-    // Ensure simulation is running
-    if (!this.isRunning) {
+    // Reset frame counter
+    this.frameCount = 0;
+
+    console.debug('🌱 Simulation reset 🔄');
+
+    // Restart if it was running before
+    if (wasRunning) {
       this.startSimulation();
     }
   }
 
-  resetSimulation() {
-    this.lifeforms = [];
-    this.resources = [];
-    this.frameCount = 0;
-
-    console.debug('🌱 Simulation reset 🔄 resetSimulation');
-
-    // Redraw once
-    if (!this.isRunning) {
-      this.render();
-    }
-  }
-
-  render() {
-    if (!this.isInitialized) return;
+  /**
+   * Main render loop that handles compositing tile outputs onto the main canvas
+   * @param {number} timestamp - Current animation frame timestamp
+   * @private
+   */
+  render(timestamp) {
+    if (!this.isInitialized || !this.isRunning) return;
 
     // Calculate delta time
-    const now = performance.now();
-    const deltaTime = (now - (this.lastFrameTime || now)) / 1000; // in seconds
-    this.lastFrameTime = now;
+    const deltaTime = timestamp - (this.lastFrameTime || timestamp);
+    this.lastFrameTime = timestamp;
 
-    // Update frame counter
+    // Increment frame counter
     this.frameCount++;
 
-    // Update uniform buffer
-    const uniformData = new Float32Array([
-      deltaTime,
-      this.width,
-      this.height,
-      this.frameCount
-    ]);
-
-    this.device.queue.writeBuffer(this.uniformBuffer, 0, uniformData);
-
-    // Create command encoder
-    const commandEncoder = this.device.createCommandEncoder();
-
-    // Compute pass
-    const computePass = commandEncoder.beginComputePass();
-    computePass.setPipeline(this.computePipeline);
-    computePass.setBindGroup(0, this.computeBindGroup);
-    computePass.dispatchWorkgroups(
-      Math.ceil(this.width / 8),
-      Math.ceil(this.height / 8)
-    );
-    computePass.end();
-
-    // Copy output buffer to texture
-    commandEncoder.copyBufferToTexture(
-      {
-        buffer: this.outputBuffer,
-        bytesPerRow: this.width * 4 * 4, // 4 floats per pixel, 4 bytes per float
-        rowsPerImage: this.height,
-      },
-      { texture: this.texture },
-      [this.width, this.height]
-    );
-
-    // Render pass
-    const renderPassDescriptor = {
+    // Begin drawing to the main canvas
+    const encoder = this.device.createCommandEncoder();
+    const renderPass = encoder.beginRenderPass({
       colorAttachments: [
         {
           view: this.context.getCurrentTexture().createView(),
           loadOp: 'clear',
           storeOp: 'store',
-          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-        },
-      ],
-    };
+          clearValue: { r: 0.0, g: 0.05, b: 0.1, a: 1.0 },
+        }
+      ]
+    });
 
-    const renderPass = commandEncoder.beginRenderPass(renderPassDescriptor);
-    renderPass.setPipeline(this.renderPipeline);
-    renderPass.setBindGroup(0, this.renderBindGroup);
-    renderPass.draw(4); // Draw 4 vertices for a quad
+    // Complete the render pass
     renderPass.end();
 
     // Submit commands
-    this.device.queue.submit([commandEncoder.finish()]);
+    this.device.queue.submit([encoder.finish()]);
 
-    // Request next frame if simulation is running
+    // Composite tile outputs onto main canvas
+    // Note: This is simplified and will be replaced with proper WebGPU rendering
+    const ctx = this.canvas.getContext('2d');
+
+    // Clear canvas first
+    ctx.fillStyle = '#0a1e12';
+    ctx.fillRect(0, 0, this.width, this.height);
+
+    // Draw debug grid to visualize tiles
+    ctx.strokeStyle = 'rgba(127, 224, 132, 0.3)';
+    ctx.lineWidth = 1;
+
+    for (let y = 0; y <= this.height; y += this.tileSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(this.width, y);
+      ctx.stroke();
+    }
+
+    for (let x = 0; x <= this.width; x += this.tileSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, this.height);
+      ctx.stroke();
+    }
+
+    // Draw entities from all tiles (for demonstration)
+    ctx.fillStyle = '#7fe084';
+
+    this.tiles.forEach(tile => {
+      // Draw tile ID for debugging
+      ctx.font = '12px monospace';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillText(tile.id, tile.left + 5, tile.top + 15);
+
+      // Draw entities in this tile
+      ctx.fillStyle = '#7fe084';
+      tile.entities.forEach(entity => {
+        if (entity.type === 'lifeform') {
+          ctx.beginPath();
+          ctx.arc(tile.left + entity.x, tile.top + entity.y, entity.size || 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    });
+
+    // Draw frame counter
+    ctx.font = '16px monospace';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillText(`Frame: ${this.frameCount}`, 10, 26);
+
+    // Continue animation loop
     if (this.isRunning) {
-      this.animationId = requestAnimationFrame(this.render);
+      this.animationFrameId = requestAnimationFrame(this.render);
     }
   }
 }

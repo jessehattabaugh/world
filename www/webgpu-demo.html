@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGPU Demo - Array Doubling</title>
+  <style>
+    body {
+      font-family: 'Orbitron', system-ui, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #0a1e12;
+      color: #e8f7e9;
+    }
+
+    h1 {
+      color: #7fe084;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background-color: rgba(44, 125, 78, 0.1);
+      border: 1px solid rgba(127, 224, 132, 0.2);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    .status-container {
+      height: 300px;
+      overflow-y: auto;
+      background-color: rgba(10, 30, 18, 0.8);
+      border: 1px solid rgba(127, 224, 132, 0.2);
+      border-radius: 4px;
+      padding: 1rem;
+      font-family: monospace;
+      margin-top: 1rem;
+    }
+
+    .success-message {
+      color: #7fe084;
+      margin-bottom: 0.5rem;
+    }
+
+    .error-message {
+      color: #ff6b6b;
+      margin-bottom: 0.5rem;
+    }
+
+    button {
+      background-color: #2c7d4e;
+      color: #e8f7e9;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background-color: #7fe084;
+      color: #0a1e12;
+      transform: translateY(-2px);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .home-link {
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    .home-link a {
+      color: #7fe084;
+      text-decoration: none;
+    }
+
+    .home-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>WebGPU Demo: Array Doubling</h1>
+
+  <div class="container">
+    <div class="card">
+      <h2>What This Demo Does</h2>
+      <p>
+        This demonstration initializes WebGPU and runs a simple compute shader that
+        multiplies each element in an array by 2. The process involves:
+      </p>
+      <ul>
+        <li>Checking WebGPU support in your browser</li>
+        <li>Setting up GPU device and compute pipeline</li>
+        <li>Creating input/output buffers</li>
+        <li>Running the compute shader on the GPU</li>
+        <li>Reading back and validating results</li>
+      </ul>
+      <div class="controls">
+        <button id="run-demo">Run WebGPU Demo</button>
+        <button id="clear-log">Clear Log</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Status Log</h2>
+      <div id="status-container" class="status-container"></div>
+    </div>
+  </div>
+
+  <div class="home-link">
+    <a href="/">← Back to Home</a>
+  </div>
+
+  <script type="module">
+    import { initWebGPU } from '/scripts/webgpu-setup.js';
+
+    const statusContainer = document.getElementById('status-container');
+    const runDemoButton = document.getElementById('run-demo');
+    const clearLogButton = document.getElementById('clear-log');
+
+    runDemoButton.addEventListener('click', async () => {
+      // Disable the button while running
+      runDemoButton.disabled = true;
+      statusContainer.innerHTML = ''; // Clear previous logs
+
+      try {
+        // Initialize WebGPU and run the compute demo
+        const result = await initWebGPU(statusContainer);
+
+        if (result && result.success) {
+          runDemoButton.textContent = 'Run Again';
+        }
+      } catch (error) {
+        console.error('Demo failed:', error);
+      } finally {
+        // Re-enable the button
+        runDemoButton.disabled = false;
+      }
+    });
+
+    clearLogButton.addEventListener('click', () => {
+      statusContainer.innerHTML = '';
+    });
+  </script>
+</body>
+</html>
