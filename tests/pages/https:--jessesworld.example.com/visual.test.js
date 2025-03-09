@@ -1,7 +1,7 @@
 /**
  * Homepage visual tests
  */
-import { expect, test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { formatPageId, mapTestUrl } from '../../utils/url-mapping.js';
 
 // Keep original URL as reference for reports, but use the mapped URL for testing
@@ -29,13 +29,9 @@ test.describe('Homepage - Visual', () => {
     // Wait for any animations to complete
     await page.waitForTimeout(500);
 
-    // Get current date for snapshot update detection
-    const updateDate = new Date().toISOString().split('T')[0];
-
-    // Take a screenshot and compare with baseline
-    await expect(page).toHaveScreenshot(`${pageId}-desktop-${updateDate}.png`, {
+    await expect(page).toHaveScreenshot(`${pageId}-desktop.png`, {
       animations: 'disabled',
-      mask: [page.locator('.dynamic-content').or(page.locator('.date'))] // Mask dynamic content
+      mask: [page.locator('.dynamic-content')], // Add locators for dynamic content
     });
   });
 
@@ -47,13 +43,8 @@ test.describe('Homepage - Visual', () => {
     // Wait for any animations to complete
     await page.waitForTimeout(500);
 
-    // Get current date for snapshot update detection
-    const updateDate = new Date().toISOString().split('T')[0];
-
-    // Take a screenshot and compare with baseline
-    await expect(page).toHaveScreenshot(`${pageId}-mobile-${updateDate}.png`, {
-      animations: 'disabled',
-      mask: [page.locator('.dynamic-content').or(page.locator('.date'))] // Mask dynamic content
+    await expect(page).toHaveScreenshot(`${pageId}-mobile.png`, {
+      animations: 'disabled'
     });
   });
 });

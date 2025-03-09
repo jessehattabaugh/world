@@ -5,11 +5,9 @@ import { test, expect } from '@playwright/test';
 import { checkHeaders, testCSP, checkForVulnerableLibraries } from '../../utils/security-utils.js';
 
 const pageUrl = 'https://jessesworld.example.com/contact';
-const pageName = 'Contact';
-const pageId = 'https:--jessesworld.example.com-contact';
 
 test.describe('Contact - Security', () => {
-  test('has proper security headers', async ({ page, request }) => {
+  test('has proper security headers', async ({ request }) => {
     // Test security headers
     const response = await request.get(pageUrl);
     const headers = response.headers();

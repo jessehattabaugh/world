@@ -1,12 +1,16 @@
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-/**
- * Security testing utilities
- */
 import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
+
+const reportDir = path.join(process.cwd(), 'reports', 'security');
+
+// Ensure report directory exists
+if (!fs.existsSync(reportDir)) {
+  fs.mkdirSync(reportDir, { recursive: true });
+}
 
 /**
  * Check security headers against best practices
@@ -18,12 +22,12 @@ export async function checkHeaders(headers) {
 
   // Required security headers
   const requiredHeaders = {
-    'strict-transport-security': value => value.includes('max-age='),
-    'x-content-type-options': value => value === 'nosniff',
-    'x-frame-options': value => ['DENY', 'SAMEORIGIN'].includes(value),
-    'content-security-policy': value => value.length > 0,
-    'referrer-policy': value => value.length > 0,
-    'permissions-policy': value => value.length > 0,
+    'strict-transport-security': (value) => { return value.includes('max-age='); },
+    'x-content-type-options': (value) => { return value === 'nosniff'; },
+    'x-frame-options': (value) => { return ['DENY', 'SAMEORIGIN'].includes(value); },
+    'content-security-policy': (value) => { return value.length > 0; },
+    'referrer-policy': (value) => { return value.length > 0; },
+    'permissions-policy': (value) => { return value.length > 0; },
   };
 
   const results = {
@@ -51,8 +55,8 @@ export async function checkHeaders(headers) {
 
   // Generate summary message
   const failedHeaders = results.details
-    .filter(detail => !detail.pass)
-    .map(detail => detail.header);
+    .filter((detail) => { return !detail.pass; })
+    .map((detail) => { return detail.header; });
 
   if (failedHeaders.length > 0) {
     results.message = `Missing or invalid security headers: ${failedHeaders.join(', ')}`;
@@ -147,15 +151,17 @@ export async function checkForVulnerableLibraries(page) {
   // Check for vulnerabilities
   const vulnerabilities = [];
   for (const lib of libraries) {
-    const vulns = knownVulnerabilities.filter(v =>
-      v.name === lib.name && isVulnerable(lib.version, v.version)
-    );
+    const vulns = knownVulnerabilities.filter((v) => {
+      return v.name === lib.name && isVulnerable(lib.version, v.version);
+    });
 
-    vulnerabilities.push(...vulns.map(v => ({
-      library: lib.name,
-      version: lib.version,
-      reason: v.reason,
-    })));
+    vulnerabilities.push(...vulns.map((v) => {
+      return {
+        library: lib.name,
+        version: lib.version,
+        reason: v.reason,
+      };
+    }));
   }
 
   return {
@@ -165,82 +171,89 @@ export async function checkForVulnerableLibraries(page) {
 }
 
 /**
+ * Assert security headers
+ * @param {import('@playwright/test').Page} page
+ * @param {string} testName
+ */
+export async function assertSecurityHeaders(page, testName) {
+  const response = await page.goto(page.url());
+  const headers = response.headers();
+
+  const requiredHeaders = [
+    'x-frame-options',
+    'x-xss-protection',
+    'x-content-type-options',
+    'referrer-policy',
+    'content-security-policy',
+    'permissions-policy'
+  ];
+
+  const missingHeaders = requiredHeaders.filter(header => !headers[header]);
+
+  if (missingHeaders.length > 0) {
+    throw new Error(`Missing security headers: ${missingHeaders.join(', ')}`);
+  }
+
+  console.log(`Security headers for ${testName} are present`);
+}
+
+/**
+ * Assert Content Security Policy (CSP)
+ * @param {import('@playwright/test').Page} page
+ * @param {string} testName
+ */
+export async function assertContentSecurityPolicy(page, testName) {
+  const response = await page.goto(page.url());
+  const headers = response.headers();
+
+  if (!headers['content-security-policy']) {
+    throw new Error('Missing Content Security Policy (CSP) header');
+  }
+
+  console.log(`Content Security Policy for ${testName} is present`);
+}
+
+/**
+ * Assert no vulnerable libraries
+ * @param {import('@playwright/test').Page} page
+ * @param {string} testName
+ */
+export async function assertNoVulnerableLibraries(page, testName) {
+  const response = await page.goto(page.url());
+  const body = await response.text();
+
+  const vulnerableLibraries = [
+    'jquery',
+    'lodash',
+    'moment',
+    'underscore'
+  ];
+
+  const foundLibraries = vulnerableLibraries.filter(lib => body.includes(lib));
+
+  if (foundLibraries.length > 0) {
+    throw new Error(`Found vulnerable libraries: ${foundLibraries.join(', ')}`);
+  }
+
+  console.log(`No vulnerable libraries found for ${testName}`);
+}
+
+/**
  * Run all security tests for a page
- * @param {Page} page Playwright page object
+ * @param {import('@playwright/test').Page} page
  * @param {string} pageId Page identifier
  */
 export async function runSecurityTests(page, pageId) {
   console.log(`🔒 Running security tests for ${pageId}...`);
 
   try {
-    // Get response headers
-    const response = await page.request.get(page.url());
-    const headers = response.headers();
+    await assertSecurityHeaders(page, pageId);
+    await assertContentSecurityPolicy(page, pageId);
+    await assertNoVulnerableLibraries(page, pageId);
 
-    // Check security headers
-    const headerChecks = await checkHeaders(headers);
-
-    // Check CSP
-    const cspResult = await testCSP(page);
-
-    // Check for vulnerable libraries
-    const vulnResult = await checkForVulnerableLibraries(page);
-
-    // Save results to file
-    const securityDir = path.join(rootDir, 'reports', 'security');
-
-    try {
-      // Create directory if it doesn't exist
-      if (!fs.existsSync(securityDir)) {
-        fs.mkdirSync(securityDir, { recursive: true });
-      }
-
-      // Save report
-      const reportPath = path.join(securityDir, `${pageId}-security.json`);
-      fs.writeFileSync(reportPath, JSON.stringify({
-        timestamp: new Date().toISOString(),
-        headerChecks,
-        cspResult,
-        vulnerableLibraries: vulnResult
-      }, null, 2));
-
-    } catch (error) {
-      console.error('Error saving security report:', error);
-    }
-
-    // Log results
-    if (!headerChecks.pass) {
-      console.warn(`⚠️ Security header issues found for ${pageId}:`);
-      headerChecks.details.filter(d => {return !d.pass}).forEach(issue => {
-        console.warn(`  - ${issue.message}`);
-      });
-    } else {
-      console.log(`✅ Security headers verified for ${pageId}`);
-    }
-
-    if (!cspResult.valid) {
-      console.warn(`⚠️ CSP issues found for ${pageId}: ${cspResult.message}`);
-    } else {
-      console.log(`✅ CSP validated for ${pageId}`);
-    }
-
-    if (vulnResult.vulnerabilities.length > 0) {
-      console.warn(`⚠️ ${vulnResult.vulnerabilities.length} vulnerable libraries found for ${pageId}:`);
-      vulnResult.vulnerabilities.forEach((vuln, i) => {
-        console.warn(`  ${i+1}. ${vuln.library} (${vuln.version}): ${vuln.reason}`);
-      });
-    } else {
-      console.log(`✅ No vulnerable libraries found for ${pageId}`);
-    }
-
-    return {
-      headerChecks,
-      cspResult,
-      vulnResult
-    };
-
+    console.log(`Security tests for ${pageId} passed`);
   } catch (error) {
-    console.error('Error running security tests:', error);
-    return { error: error.message };
+    console.error(`Security tests for ${pageId} failed:`, error);
+    throw error;
   }
 }

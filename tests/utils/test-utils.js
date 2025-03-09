@@ -12,7 +12,7 @@ export const test = base.extend({
   // Base setup for all tests - handles URL mapping
   page: async ({ page }, use) => {
     // Set up route mapping for jessesworld.example.com -> localhost:3000
-    await page.route(/https:\/\/jessesworld\.example\.com.*/, route => {
+    await page.route(/https:\/\/jessesworld\.example\.com.*/, (route) => {
       const url = new URL(route.request().url());
       url.host = 'localhost:3000';
       url.protocol = 'http:';
@@ -120,7 +120,7 @@ export const test = base.extend({
       // Return a function to reset preferences
       return async () => {
         await context.clearCookies();
-        await page.evaluate(() => localStorage.clear());
+        await page.evaluate(() => { localStorage.clear(); });
         await page.emulateMedia({});
         await context.setOffline(false);
       };

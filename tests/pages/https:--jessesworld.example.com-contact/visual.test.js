@@ -4,7 +4,6 @@
 import { test, expect } from '@playwright/test';
 
 const pageUrl = 'https://jessesworld.example.com/contact';
-const pageName = 'Contact';
 const pageId = 'https:--jessesworld.example.com-contact';
 
 test.describe('Contact - Visual', () => {
