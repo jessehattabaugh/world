@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jesse's World - Ecosystem Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0a1e12;
+            --text-color: #e0efe4;
+            --accent-color: #7fe084;
+            --header-color: #1a4e24;
+            --card-bg: #102818;
+            --button-bg: #1a4e24;
+            --button-hover: #2a5e34;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+        
+        header {
+            background-color: var(--header-color);
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        h1, h2, h3 {
+            color: var(--accent-color);
+        }
+        
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        .ecosystem-container {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        #ecosystem-display {
+            position: relative;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 16/10;
+            max-height: 600px;
+        }
+        
+        #ecosystem-display canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        button {
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: var(--button-hover);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status-panel {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .logs {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            padding: 0.5rem;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+        
+        .logs div {
+            margin-bottom: 0.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.25rem;
+        }
+        
+        .logs .info {
+            color: var(--accent-color);
+        }
+        
+        .logs .error {
+            color: #ff6b6b;
+        }
+        
+        .logs .warn {
+            color: #ffd166;
+        }
+        
+        @media (max-width: 768px) {
+            .ecosystem-container {
+                grid-template-columns: 1fr;
+            }
+            
+            #ecosystem-display {
+                aspect-ratio: 4/3;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Jesse's World - WebGPU Ecosystem Simulator</h1>
+    </header>
+    
+    <main>
+        <div class="ecosystem-container">
+            <div id="ecosystem-display">
+                <canvas id="main-canvas"></canvas>
+            </div>
+            
+            <div class="controls">
+                <h2>Controls</h2>
+                <div class="button-group">
+                    <button id="start-simulation" disabled>Start Simulation</button>
+                    <button id="pause-simulation" disabled>Pause Simulation</button>
+                    <button id="reset-simulation" disabled>Reset Simulation</button>
+                    <button id="spawn-random-entities" disabled>Spawn Random Entities</button>
+                    <button id="toggle-render-mode" disabled>Toggle Render Mode</button>
+                </div>
+                
+                <h3>Entity Types</h3>
+                <div class="button-group">
+                    <button id="spawn-plants" disabled>Spawn Plants</button>
+                    <button id="spawn-herbivores" disabled>Spawn Herbivores</button>
+                    <button id="spawn-carnivores" disabled>Spawn Carnivores</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-panel">
+            <h2>Simulation Status</h2>
+            <div class="status-item">
+                <span>Status:</span>
+                <span id="status-indicator">Initializing...</span>
+            </div>
+            <div class="status-item">
+                <span>WebGPU:</span>
+                <span id="webgpu-status">Checking...</span>
+            </div>
+            <div class="status-item">
+                <span>Workers:</span>
+                <span id="workers-count">0</span>
+            </div>
+            <div class="status-item">
+                <span>Chunks:</span>
+                <span id="chunks-count">0</span>
+            </div>
+            <div class="status-item">
+                <span>Entities:</span>
+                <span id="entities-count">0</span>
+            </div>
+            <div class="status-item">
+                <span>FPS:</span>
+                <span id="fps-counter">0</span>
+            </div>
+        </div>
+        
+        <div class="status-panel">
+            <h2>Debug Logs</h2>
+            <div id="simulator-logs" class="logs">
+                <div class="info">Initializing ecosystem simulator...</div>
+            </div>
+        </div>
+    </main>
+    
+    <script type="module">
+        import { SimulationController } from './scripts/engine/simulation-controller.js';
+        
+        // Make the controller globally available for testing
+        window.simulationController = null;
+        
+        async function initializeApp() {
+            try {
+                logMessage('Starting initialization...');
+                
+                // Check for WebGPU support
+                if ('gpu' in navigator) {
+                    document.getElementById('webgpu-status').textContent = 'Supported';
+                    logMessage('WebGPU is supported in this browser');
+                    
+                    // Try to get adapter to confirm WebGPU works
+                    try {
+                        const adapter = await navigator.gpu.requestAdapter();
+                        if (adapter) {
+                            document.getElementById('webgpu-status').textContent = 'Enabled';
+                            logMessage('WebGPU adapter successfully initialized');
+                        } else {
+                            document.getElementById('webgpu-status').textContent = 'Failed to initialize';
+                            logMessage('WebGPU adapter initialization failed', 'error');
+                        }
+                    } catch (err) {
+                        document.getElementById('webgpu-status').textContent = 'Error: ' + err.message;
+                        logMessage('WebGPU error: ' + err.message, 'error');
+                    }
+                } else {
+                    document.getElementById('webgpu-status').textContent = 'Not Supported';
+                    logMessage('WebGPU is not supported in this browser', 'warn');
+                }
+                
+                // Initialize the simulation controller
+                const canvas = document.getElementById('main-canvas');
+                const controller = new SimulationController(canvas);
+                
+                // Store controller globally for testing
+                window.simulationController = controller;
+                
+                // Initialize the controller
+                await controller.initialize();
+                
+                // Update UI based on initialization result
+                document.getElementById('status-indicator').textContent = 'Initialized';
+                document.getElementById('workers-count').textContent = controller.workerCount.toString();
+                
+                // Enable UI controls
+                enableControls();
+                
+                // Set up event listeners
+                document.getElementById('start-simulation').addEventListener('click', () => {
+                    controller.start();
+                    logMessage('Simulation started');
+                });
+                
+                document.getElementById('pause-simulation').addEventListener('click', () => {
+                    controller.pause();
+                    logMessage('Simulation paused');
+                });
+                
+                document.getElementById('reset-simulation').addEventListener('click', () => {
+                    controller.reset();
+                    logMessage('Simulation reset');
+                });
+                
+                document.getElementById('spawn-random-entities').addEventListener('click', () => {
+                    const count = Math.floor(Math.random() * 20) + 10; // 10-30 entities
+                    controller.spawnRandomEntities(count);
+                    logMessage(`Spawned ${count} random entities`);
+                });
+                
+                document.getElementById('toggle-render-mode').addEventListener('click', () => {
+                    controller.toggleRenderMode();
+                    logMessage('Render mode toggled');
+                });
+                
+                document.getElementById('spawn-plants').addEventListener('click', () => {
+                    controller.spawnEntitiesByType(0, 10);
+                    logMessage('Spawned 10 plants');
+                });
+                
+                document.getElementById('spawn-herbivores').addEventListener('click', () => {
+                    controller.spawnEntitiesByType(1, 5);
+                    logMessage('Spawned 5 herbivores');
+                });
+                
+                document.getElementById('spawn-carnivores').addEventListener('click', () => {
+                    controller.spawnEntitiesByType(2, 3);
+                    logMessage('Spawned 3 carnivores');
+                });
+                
+                // Setup regular UI updates
+                setInterval(() => {
+                    document.getElementById('chunks-count').textContent = controller.getReadyChunkCount().toString();
+                    document.getElementById('entities-count').textContent = controller.getTotalEntityCount().toString();
+                    document.getElementById('fps-counter').textContent = controller.getCurrentFPS().toFixed(1);
+                }, 500);
+                
+            } catch (error) {
+                document.getElementById('status-indicator').textContent = 'Initialization Error';
+                logMessage(`Error initializing simulation: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        function enableControls() {
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.disabled = false;
+            });
+        }
+        
+        function logMessage(message, type = 'info') {
+            const logsContainer = document.getElementById('simulator-logs');
+            const logEntry = document.createElement('div');
+            logEntry.classList.add(type);
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+        
+        // Initialize the application when the page is loaded
+        window.addEventListener('load', initializeApp);
+    </script>
+</body>
+</html>
