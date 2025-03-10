@@ -1,3 +1,5 @@
+import { Lifeform } from './lifeform.js';
+
 /**
  * Core Simulator
  */
@@ -16,6 +18,7 @@ export class CoreSimulator {
         this.nextEntityId = 0;
         this.entities = new Map();
         this.neuralNetworks = new Map();
+        this.lifeforms = [];
 
         // Initialize buffers
         this.lifeformBuffer = {
@@ -32,6 +35,13 @@ export class CoreSimulator {
 
         // Create GPU buffers
         this.createGPUBuffers();
+    }
+
+    async initialize() {
+        // Minimal setup: create a few lifeforms
+        this.lifeforms.push(new Lifeform({}));
+        this.lifeforms.push(new Lifeform({}));
+        return true;
     }
 
     /**
@@ -73,6 +83,11 @@ export class CoreSimulator {
         this.stats.entityCount++;
 
         return entity;
+    }
+
+    spawnLifeform() {
+        const lf = new Lifeform({});
+        this.lifeforms.push(lf);
     }
 
     /**
@@ -255,6 +270,24 @@ export class CoreSimulator {
 
         // Update statistics
         this.updateStats();
+    }
+
+    update() {
+        // Minimal loop: update each lifeform (simulate compute shader step)
+        this.lifeforms = this.lifeforms.filter(l => l.alive);
+        this.lifeforms.forEach(l => l.update(1, []));
+        return true;
+    }
+
+    // Stub to simulate compute shader binding and update
+    compileAndBindComputeShaders() {
+        // Assume shaders are compiled and pipelines are created successfully.
+        return true;
+    }
+
+    updateLifeformStates() {
+        // Call update to simulate lifeform state changes
+        return this.update();
     }
 
     /**

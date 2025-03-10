@@ -1,5 +1,7 @@
+import { setupMockWebGPU, skipWithoutWebGPU, test } from './webgpu-test-utils.js';
+
 // @ts-check
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 /**
  * Tests for the Jesse's World WebGPU Ecosystem Simulator
@@ -8,7 +10,12 @@ import { expect, test } from '@playwright/test';
 
 // Test the ecosystem simulator initialization and functionality
 test.describe('Ecosystem Simulator - Milestone 1', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, webgpuSupported }) => {
+    // Set up mock WebGPU if needed
+    if (!webgpuSupported) {
+      await setupMockWebGPU(page);
+    }
+
     // Navigate to the homepage where the simulator is embedded
     await page.goto('/');
 
@@ -23,17 +30,31 @@ test.describe('Ecosystem Simulator - Milestone 1', () => {
     await expect(page.locator('#reset-preview')).not.toBeDisabled({ timeout: 5000 });
   });
 
-  test('should detect WebGPU when available', async ({ page, browserName }) => {
-    // Check for compatibility notice - this test will be skipped if the browser doesn't support WebGPU
-    const hasWebGPU = await page.evaluate(() => {return 'gpu' in navigator});
+  test('should detect WebGPU when available', async ({ page, webgpuSupported, browserName }, testInfo) => {
+    // Skip test if WebGPU is not supported
+    if (skipWithoutWebGPU(testInfo, webgpuSupported)) return;
 
-    if (hasWebGPU) {
-      // If WebGPU is supported, we should see a success message
-      const compatNotice = await page.locator('#compatibility-notice');
-      await expect(compatNotice).toContainText('supports WebGPU', { timeout: 5000 });
-    } else {
-      test.skip(`${browserName  } does not support WebGPU`);
+    // Check for compatibility notice - this test will run only if the browser supports WebGPU
+    const compatNotice = await page.locator('#compatibility-notice');
+    await expect(compatNotice).toContainText('supports WebGPU', { timeout: 5000 });
+  });
+
+  test('should show appropriate WebGPU warning dialog for unsupported browsers', async ({ page, webgpuSupported }, testInfo) => {
+    // Only run this test if WebGPU is NOT supported
+    if (webgpuSupported) {
+      test.skip(true, 'Browser supports WebGPU, skipping warning dialog test');
+      return;
     }
+
+    // If WebGPU is not supported, we should see a warning dialog
+    const warningDialog = page.locator('#webgpu-warning');
+    await expect(warningDialog).toBeVisible();
+
+    // Close the dialog
+    await page.click('#close-warning');
+
+    // Verify dialog is closed
+    await expect(warningDialog).not.toBeVisible();
   });
 
   test('should spawn entities when button is clicked', async ({ page }) => {
@@ -173,26 +194,5 @@ test.describe('WebGPU Feature Detection - Milestone 1', () => {
 
     // Expect Web Workers to be supported (this should be available in all test browsers)
     expect(features.webWorker).toBe(true);
-  });
-
-  test('should show appropriate WebGPU warning dialog for unsupported browsers', async ({ page, browserName }) => {
-    await page.goto('/');
-
-    const hasWebGPU = await page.evaluate(() => {return 'gpu' in navigator});
-
-    if (!hasWebGPU) {
-      // If WebGPU is not supported, we should see a warning dialog
-      const warningDialog = page.locator('#webgpu-warning');
-      await expect(warningDialog).toBeVisible();
-
-      // Close the dialog
-      await page.click('#close-warning');
-
-      // Verify dialog is closed
-      await expect(warningDialog).not.toBeVisible();
-    } else {
-      // Skip test if browser supports WebGPU
-      test.skip(`${browserName  } supports WebGPU, skipping warning dialog test`);
-    }
   });
 });

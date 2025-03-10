@@ -11,14 +11,11 @@ export default defineConfig({
 	workers: process.env.CI ? 1 : undefined,
 	reporter: [
 		['html', { open: 'never' }],
-		['list', { printSteps: true }]
+		['list', { printSteps: true }],
 	],
 
 	// Updated to include ecosystem tests
-	testMatch: [
-		'**/tests/pages/**/*.test.js',
-		'**/tests/ecosystem/**/*.test.js',
-	],
+	testMatch: ['**/tests/pages/**/*.test.js', '**/tests/ecosystem/**/*.test.js'],
 
 	// Configure the flat snapshot directory
 	snapshotDir: './snapshots',
@@ -49,13 +46,17 @@ export default defineConfig({
 		video: 'retain-on-failure',
 	},
 
-	// Configure projects for different browsers
+	// Configure projects for different browsers with WebGPU enabled where possible
 	projects: [
 		{
 			name: 'chromium',
 			use: {
 				browserName: 'chromium',
 				viewport: { width: 1280, height: 720 },
+				// Chrome 113+ has WebGPU enabled by default
+				launchOptions: {
+					args: ['--enable-unsafe-webgpu', '--enable-features=Vulkan,WebGPU'],
+				},
 			},
 		},
 		{
@@ -63,6 +64,13 @@ export default defineConfig({
 			use: {
 				browserName: 'firefox',
 				viewport: { width: 1280, height: 720 },
+				// Firefox needs flags to enable WebGPU
+				launchOptions: {
+					firefoxUserPrefs: {
+						'dom.webgpu.enabled': true,
+						'gfx.webgpu.force-enabled': true,
+					},
+				},
 			},
 		},
 		{
@@ -70,6 +78,8 @@ export default defineConfig({
 			use: {
 				browserName: 'webkit',
 				viewport: { width: 1280, height: 720 },
+				// WebKit (Safari) doesn't fully support WebGPU yet
+				// No specific flags available for enabling it
 			},
 		},
 		{
@@ -77,6 +87,9 @@ export default defineConfig({
 			use: {
 				browserName: 'chromium',
 				...devices['Pixel 5'],
+				launchOptions: {
+					args: ['--enable-unsafe-webgpu', '--enable-features=Vulkan,WebGPU'],
+				},
 			},
 		},
 		{
@@ -84,6 +97,7 @@ export default defineConfig({
 			use: {
 				browserName: 'webkit',
 				...devices['iPhone 12'],
+				// WebKit (Safari) doesn't fully support WebGPU yet
 			},
 		},
 	],

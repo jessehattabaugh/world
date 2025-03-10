@@ -105,3 +105,112 @@ export async function expectScreenshot(page, screenshotName) {
     return false;
   }
 }
+
+/**
+ * Test setup utilities for Jesse's World
+ * Provides common functions for test configuration and WebGPU detection
+ */
+
+/**
+ * Check if WebGPU is available in the current browser
+ * @param {import('@playwright/test').Page} page - Playwright page object
+ * @returns {Promise<boolean>} - Whether WebGPU is supported
+ */
+export async function detectWebGPU(page) {
+  return page.evaluate(() => {
+    return !!window.navigator.gpu;
+  });
+}
+
+/**
+ * Get detailed WebGPU support information
+ * @param {import('@playwright/test').Page} page - Playwright page object
+ * @returns {Promise<Object>} - WebGPU support details
+ */
+export async function getWebGPUInfo(page) {
+  return page.evaluate(async () => {
+    if (!navigator.gpu) {
+      return {
+        supported: false,
+        adapterInfo: null,
+        features: [],
+        limits: {}
+      };
+    }
+
+    try {
+      // Request adapter with timeout
+      const adapterPromise = navigator.gpu.requestAdapter();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('WebGPU adapter request timeout')), 5000)
+      );
+
+      const adapter = await Promise.race([adapterPromise, timeoutPromise])
+        .catch(() => null);
+
+      if (!adapter) {
+        return {
+          supported: true,
+          adapterRequestFailed: true,
+          adapterInfo: null,
+          features: [],
+          limits: {}
+        };
+      }
+
+      // Get adapter info
+      const adapterInfo = await adapter.requestAdapterInfo();
+
+      // Get features
+      const features = [];
+      for (const feature of adapter.features.values()) {
+        features.push(feature);
+      }
+
+      // Get limits
+      const limits = {};
+      for (const [name, value] of Object.entries(adapter.limits)) {
+        limits[name] = value;
+      }
+
+      return {
+        supported: true,
+        adapterInfo,
+        features,
+        limits
+      };
+    } catch (error) {
+      return {
+        supported: false,
+        error: error.toString()
+      };
+    }
+  });
+}
+
+/**
+ * Configure test context based on browser WebGPU support
+ * @param {import('@playwright/test').TestInfo} testInfo - Test information
+ * @param {import('@playwright/test').Page} page - Playwright page object
+ */
+export async function setupWebGPUTest(testInfo, page) {
+  // Detect WebGPU support
+  const hasWebGPU = await detectWebGPU(page);
+
+  // Add WebGPU support info to test annotations
+  testInfo.annotations.push({
+    type: 'webgpu-support',
+    description: hasWebGPU ? 'WebGPU supported' : 'WebGPU not supported'
+  });
+
+  // Log WebGPU status for debugging
+  console.log(`WebGPU support in ${testInfo.project.name}: ${hasWebGPU ? 'YES' : 'NO'}`);
+
+  if (hasWebGPU) {
+    // Get detailed WebGPU info for debugging
+    const gpuInfo = await getWebGPUInfo(page);
+    console.log(`WebGPU adapter: ${gpuInfo.adapterInfo?.vendor || 'Unknown'}`);
+  }
+
+  return hasWebGPU;
+}

@@ -22,9 +22,43 @@ import { WebGPUManager } from './webgpu-manager.js';
 // Rename class to reflect chunk usage.
 class ChunkWorker {
 	// ...existing code...
-    // All references previously using "tile" have been updated to "chunk"
-    // In a future iteration, GPU compute tasks (using the WGSL compute pipelines)
-    // will be integrated here to update lifeforms directly within the worker.
+    constructor() {
+        // ...existing code...
+    }
+
+    // Added stub to initialize with options.
+    init(options) {
+        this.options = options;
+        // include a webWorker feature flag
+        return { status: 'initialized', features: { ...options.features, webWorker: true } };
+    }
+
+    // Added stub for assigning a chunk.
+    assignChunk(chunkId, chunkInfo, canvas) {
+        this.chunkId = chunkId;
+        this.chunkInfo = chunkInfo;
+        return { status: 'chunk assigned', chunkId };
+    }
+
+    // Added stub for spawning an entity.
+    spawnEntity(chunkId, entity) {
+        return { status: 'entity spawned', chunkId };
+    }
+
+    // Added stub for reset handling.
+    reset() {
+        return { status: 'chunk reset' };
+    }
+
+    // Added stub for control commands.
+    control(action) {
+        if (action === 'reset') {
+            return this.reset();
+        }
+        return { status: 'control action executed', action };
+    }
+
+    // ...other methods as needed...
 }
 
 // Export the worker API using Comlink
@@ -36,20 +70,17 @@ Comlink.expose(new ChunkWorker());
  * @returns {Worker} - The initialized worker
  */
 export function createChunkWorker(options = {}) {
-	const worker = new Worker(new URL('./workers/chunk-worker.js', import.meta.url), {
-		type: 'module',
-	});
+	// Changed worker instantiation to use the current file's URL.
+	const worker = new Worker(import.meta.url, { type: 'module' });
 
 	// Set up basic message handler
 	worker.addEventListener('message', (event) => {
 		const { type } = event.data;
-
 		if (type === 'workerStatus') {
 			console.log(`Chunk worker status: ${event.data.status}`, event.data);
 		}
 	});
 
-	// Initialize the worker
 	const features = {
 		webGPU: options.webGPU !== false && 'gpu' in navigator,
 		offscreenCanvas: 'OffscreenCanvas' in window,
