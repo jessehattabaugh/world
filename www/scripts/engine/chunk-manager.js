@@ -49,8 +49,8 @@ export class ChunkManager {
 		}
 
 		// Listen for map movements to update chunks
-		this.map.on('moveend', () => this.updateVisibleChunks());
-		this.map.on('zoomend', () => this.updateVisibleChunks());
+		this.map.on('moveend', () => {return this.updateVisibleChunks()});
+		this.map.on('zoomend', () => {return this.updateVisibleChunks()});
 
 		this.initialized = true;
 		return true;

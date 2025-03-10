@@ -48,14 +48,15 @@ Our vision is to educate users on complex ecological concepts through interactiv
 ### Development Roadmap
 
 #### Milestone 1: Infrastructure & WebGPU
-- Web Workers & OffscreenCanvas: Divide world into tiles, each managed by a Web Worker
-- Integrate @webgpu/types and wgsl-preprocessor for shader management
+- Web Workers & OffscreenCanvas: Divide world into chunks (each representing a pixel–by–pixel simulation area) managed by Web Workers
+- Integrate @webgpu/types and wgsl-preprocessor for shader management and WGSL compute shader validation
+- Initialize GPU resources (device, buffers, pipelines) within workers (using OffscreenCanvas when available)
 
 #### Milestone 2: Core Simulation Engine
-- Define lifeform data structures and allocate GPU buffers
-- Implement basic WGSL compute shaders for parallel lifeform updates
-- Implement neural decision-making and genetic mutations within compute shaders
-- Add predation, reproduction, and mutation logic incrementally
+- Define lifeform data structures and allocate GPU buffers using 16-float blocks per lifeform
+- Implement basic WGSL compute shaders to update lifeforms in parallel
+- Integrate placeholder neural decision–making and genetic mutation logic within the compute shader
+- Incrementally add predation, reproduction, and mutation logic (currently simulated via simple threshold checks)
 
 #### Milestone 3: Rendering & Interaction
 - Implement WGSL-based rendering pipeline for lifeforms and resources
@@ -243,9 +244,10 @@ For detailed information about the testing strategy and implementation:
 
 ## Slippy Map-Style Grid System
 
-Our system divides the simulation world into chunks rather than traditional map tiles.
-These chunks are configured by the "chunkSize" option in the manager and are processed in parallel by Web Workers.
-This design (inspired by techniques seen in multiplayer games like Minecraft) lets us efficiently use available CPU cores and the GPU, while providing pan and zoom capabilities similar to slippy map libraries.
+Our simulation divides the world into fixed quadrilateral “chunks” that are processed in parallel by Web Workers.
+Unlike traditional slippy map tiles, which are designed for coarse geographical maps, our chunks represent detailed pixel–by–pixel simulation areas.
+When we later integrate a slippy–map interface (for example, using a minimal NPM package like Leaflet),
+we can generate a quadtree of standard “tiles” on the fly from our underlying chunks for rapid display and panning.
 
 ### Key Components
 

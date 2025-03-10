@@ -1,57 +1,67 @@
-#include "common/entity-types.wgsl"
-#include "common/math.wgsl"
-#include "common/random.wgsl"
-
-// Optimized neural network data structure
+// Neural Network and Entity Data Structures
 struct NeuralNet {
-    // Pack input weights in vec4 for better memory alignment
-    inputWeights: array<vec4f, 8>,  // 4x8 input->hidden weights
-    outputWeights: array<vec4f, 2>, // 8x4 hidden->output weights (packed)
-    hiddenBiases: vec4f,           // 8 hidden biases (packed in 2 vec4)
-    outputBiases: vec4f            // 4 output biases
+    inputWeights: array<vec4f, 8>,    // 4x8 input->hidden weights
+    outputWeights: array<vec4f, 2>,    // 8x4 hidden->output weights (packed)
+    hiddenBiases: vec4f,              // 8 hidden biases (packed in 2 vec4)
+    outputBiases: vec4f               // 4 output biases
 }
 
-// Optimized activation functions using fast approximations
-fn fast_sigmoid(x: f32) -> f32 {
-    return 0.5 * (x / (1.0 + abs(x)) + 1.0);
+struct SimParams {
+    deltaTime: f32,
+    frameCount: u32,
+    worldWidth: f32,
+    worldHeight: f32,
+    plantGrowthRate: f32,
+    herbivoreSpeed: f32,
+    carnivoreSpeed: f32,
+    enableMutation: u32,
+    enableReproduction: u32,
+    randomSeed: u32
 }
 
-fn fast_tanh(x: f32) -> f32 {
-    let x2 = x * x;
-    return x * (27.0 + x2) / (27.0 + 9.0 * x2);
+struct Entity {
+    position: vec2f,
+    velocity: vec2f,
+    energy: f32,
+    species: u32,
+    size: f32,
+    genes: vec4f,
+    neuralId: u32,
+    padding: f32
 }
 
-// Neural network forward pass with optimized memory access
+// Activation functions
+fn relu(x: f32) -> f32 {
+    return max(0.0, x);
+}
+
+fn sigmoid(x: f32) -> f32 {
+    return 1.0 / (1.0 + exp(-x));
+}
+
+// Neural network forward pass
 fn processNeuralNetwork(input: vec4f, net: NeuralNet) -> vec4f {
-    var hidden: vec4f;
-    var hidden2: vec4f;
+    var hidden: array<f32, 8>;
 
-    // Input -> Hidden layer (first 4 neurons)
-    // Use vec4 operations for better parallelization
-    hidden = net.inputWeights[0] * input.x +
-            net.inputWeights[1] * input.y +
-            net.inputWeights[2] * input.z +
-            net.inputWeights[3] * input.w;
-    hidden = max(hidden + net.hiddenBiases, vec4f(0.0)); // Vectorized ReLU
-
-    // Input -> Hidden layer (last 4 neurons)
-    hidden2 = net.inputWeights[4] * input.x +
-             net.inputWeights[5] * input.y +
-             net.inputWeights[6] * input.z +
-             net.inputWeights[7] * input.w;
-    hidden2 = max(hidden2 + net.hiddenBiases, vec4f(0.0)); // Vectorized ReLU
+    // Input -> Hidden layer
+    for (var i = 0u; i < 8u; i++) {
+        hidden[i] = dot(input, net.inputWeights[i]) + net.hiddenBiases[i % 4];
+        hidden[i] = relu(hidden[i]);
+    }
 
     // Hidden -> Output layer
-    // Pack operations into vec4 for parallel processing
-    let output = vec4f(
-        dot(hidden, net.outputWeights[0]) + dot(hidden2, net.outputWeights[1]),
-        dot(hidden, net.outputWeights[0].wzyx) + dot(hidden2, net.outputWeights[1].wzyx),
-        dot(hidden, net.outputWeights[0].yxwz) + dot(hidden2, net.outputWeights[1].yxwz),
-        dot(hidden, net.outputWeights[0].zwxy) + dot(hidden2, net.outputWeights[1].zwxy)
-    );
+    var output: vec4f;
+    for (var i = 0u; i < 4u; i++) {
+        var sum = 0.0;
+        // Each output connects to all hidden nodes
+        for (var j = 0u; j < 8u; j += 4u) {
+            let weights = net.outputWeights[i/4];
+            sum += hidden[j + i%4] * weights[i%4];
+        }
+        output[i] = sigmoid(sum + net.outputBiases[i]);
+    }
 
-    // Apply fast sigmoid approximation
-    return fast_sigmoid(output + net.outputBiases);
+    return output;
 }
 
 @group(0) @binding(0) var<storage, read> inputEntities: array<Entity>;
@@ -59,7 +69,28 @@ fn processNeuralNetwork(input: vec4f, net: NeuralNet) -> vec4f {
 @group(0) @binding(2) var<uniform> params: SimParams;
 @group(0) @binding(3) var<storage, read> neuralNets: array<NeuralNet>;
 
-// Optimized compute shader entry point
+// Basic compute shader for updating lifeform state
+@group(0) @binding(0)
+var<storage, read> inLifeforms: array<vec4<f32>>;
+
+@group(0) @binding(1)
+var<storage, read_write> outLifeforms: array<vec4<f32>>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let i = gid.x;
+  if (i >= arrayLength(&inLifeforms)) { return; }
+  var life = inLifeforms[i];
+  // Increment x position – placeholder for movement/neural decision logic
+  life.x = life.x + 1.0;
+  // Example mutation: if the x value exceeds a threshold, reset it (simulate mutation)
+  if (life.x > 100.0) {
+      life.x = 0.0;
+  }
+  outLifeforms[i] = life;
+}
+
+// Compute shader entry point
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) global_id: vec3u) {
     let index = global_id.x;
@@ -78,26 +109,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3u) {
     // Get entity's neural network
     let network = neuralNets[entity.neuralId];
 
-    // Prepare optimized network inputs
+    // Prepare network inputs
     let input = vec4f(
-        entity.position.x / params.worldWidth,   // Normalized x position
-        entity.position.y / params.worldHeight,  // Normalized y position
-        entity.energy / 100.0,                   // Normalized energy
-        f32(entity.species) / 2.0               // Normalized species type
+        entity.position.x / params.worldWidth,  // Normalized x position
+        entity.position.y / params.worldHeight, // Normalized y position
+        entity.energy / 100.0,                  // Normalized energy
+        f32(entity.species) / 2.0              // Normalized species type
     );
 
-    // Process neural network efficiently
+    // Process neural network
     let decisions = processNeuralNetwork(input, network);
 
-    // Apply network outputs using vectorized operations
-    let moveSpeed = entity.genes[0] * select(
-        params.herbivoreSpeed,
-        params.carnivoreSpeed,
-        entity.species == 2u
+    // Apply network outputs
+    let moveSpeed = entity.genes[0] * (
+        entity.species == 1u ? params.herbivoreSpeed : params.carnivoreSpeed
     );
 
-    // Update velocity using decisions
-    entity.velocity = (decisions.xy * 2.0 - 1.0) * moveSpeed;
+    // Movement direction from first two outputs
+    entity.velocity = vec2f(
+        (decisions[0] * 2.0 - 1.0) * moveSpeed,
+        (decisions[1] * 2.0 - 1.0) * moveSpeed
+    );
 
     // Update energy based on metabolism and movement
     let movementCost = length(entity.velocity) * entity.genes[2] * params.deltaTime;

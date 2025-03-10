@@ -6,6 +6,7 @@
 import NeuralNetwork from './neural-network.js';
 import { ResourceManager } from './resource-manager.js';
 import { preprocessShader } from '../utils/wgsl-preprocessor.js';
+import { initComputePipeline, runCompute } from './compute-pipeline.js';
 
 export class CoreSimulation {
 	constructor(gpuManager) {
@@ -84,6 +85,10 @@ export class CoreSimulation {
 			entryPoint: 'main',
 		});
 
+		// Initialize compute pipeline and buffers for lifeform data.
+		this.computeObjects = await initComputePipeline(this.device);
+		// Optionally upload initial lifeform data here.
+		console.log('Core simulation initialized with GPU buffers');
 		return true;
 	}
 
@@ -461,3 +466,5 @@ export class CoreSimulation {
 		};
 	}
 }
+
+export { CoreSimulation };

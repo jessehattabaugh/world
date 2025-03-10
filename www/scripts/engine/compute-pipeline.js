@@ -246,3 +246,59 @@ export class ComputePipeline {
         passEncoder.end();
     }
 }
+
+async function initComputePipeline(device) {
+	// Fetch and compile WGSL shader that implements neural decision-making and mutations
+	const shaderCode = await fetch('/scripts/engine/shaders/neural-compute.wgsl').then((res) =>
+		res.text(),
+	);
+
+	const shaderModule = device.createShaderModule({
+		code: shaderCode,
+		label: 'lifeform update shader',
+	});
+
+	const pipeline = device.createComputePipeline({
+		layout: 'auto',
+		compute: { module: shaderModule, entryPoint: 'main' },
+	});
+
+	// Allocate buffers for lifeform data.
+	// Each lifeform is represented as 4 vec4<f32> (16 floats, 64 bytes).
+	const lifeformCount = 1024;
+	const bufferSize = lifeformCount * 4 * Float32Array.BYTES_PER_ELEMENT;
+	const inBuffer = device.createBuffer({
+		size: bufferSize,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+	});
+	const outBuffer = device.createBuffer({
+		size: bufferSize,
+		usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+	});
+
+	const bindGroup = device.createBindGroup({
+		layout: pipeline.getBindGroupLayout(0),
+		entries: [
+			{ binding: 0, resource: { buffer: inBuffer } },
+			{ binding: 1, resource: { buffer: outBuffer } },
+		],
+	});
+
+	return { pipeline, bindGroup, inBuffer, outBuffer, lifeformCount };
+}
+
+async function runCompute(device, computeObjects) {
+	const { pipeline, bindGroup, lifeformCount } = computeObjects;
+	const commandEncoder = device.createCommandEncoder();
+	const pass = commandEncoder.beginComputePass();
+	pass.setPipeline(pipeline);
+	pass.setBindGroup(0, bindGroup);
+
+	const workgroupCount = Math.ceil(lifeformCount / 64);
+	pass.dispatchWorkgroups(workgroupCount);
+	pass.end();
+	device.queue.submit([commandEncoder.finish()]);
+}
+
+// Export for use with core simulation engine
+export { initComputePipeline, runCompute };

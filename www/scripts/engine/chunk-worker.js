@@ -4,9 +4,31 @@
  * This module serves as an entry point for creating chunk workers and handling their lifecycle.
  */
 
+/**
+ * Chunk Worker
+ *
+ * Handles simulation and rendering for a specific chunk in the world grid.
+ * Each chunk represents a fixed rectangular simulation area processed in a Web Worker.
+ * When a slippy-map interface is integrated later, a quadtree of “tiles” can be generated
+ * dynamically from these underlying simulation chunks.
+ */
+import * as Comlink from 'https://unpkg.com/comlink/dist/esm/comlink.mjs';
+
+import { Lifeform } from '../lifeform.js';
 import { ResourceManager } from './resource-manager.js';
 // Import related modules
 import { WebGPUManager } from './webgpu-manager.js';
+
+// Rename class to reflect chunk usage.
+class ChunkWorker {
+	// ...existing code...
+    // All references previously using "tile" have been updated to "chunk"
+    // In a future iteration, GPU compute tasks (using the WGSL compute pipelines)
+    // will be integrated here to update lifeforms directly within the worker.
+}
+
+// Export the worker API using Comlink
+Comlink.expose(new ChunkWorker());
 
 /**
  * Create a new chunk worker

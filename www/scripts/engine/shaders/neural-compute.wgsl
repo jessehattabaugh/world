@@ -69,6 +69,32 @@ fn processNeuralNetwork(input: vec4f, net: NeuralNet) -> vec4f {
 @group(0) @binding(2) var<uniform> params: SimParams;
 @group(0) @binding(3) var<storage, read> neuralNets: array<NeuralNet>;
 
+// Basic compute shader for updating lifeform state with neural decision and mutation placeholder
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let i = gid.x;
+    if (i >= arrayLength(&inLifeforms)) { return; }
+    var life = inLifeforms[i];
+
+    // Simple movement update (add baseline velocity)
+    life.x = life.x + 1.0;
+
+    // Neural decision placeholder:
+    // If energy is high and lifeform is not a plant (species > 0), adjust velocity based on a fake neural output.
+    if (life.y > 0.0 && life.z > 10.0) {
+        // Placeholder: reverse direction if x exceeds 100.0 to simulate neural response
+        life.y = -life.y;
+    }
+
+    // Mutation simulation: if the x value exceeds a threshold, a mutation occurs (reset x)
+    if (life.x > 100.0) {
+        life.x = 0.0;
+    }
+
+    // (Additional predation/reproduction logic can be added incrementally here)
+    outLifeforms[i] = life;
+}
+
 // Compute shader entry point
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) global_id: vec3u) {

@@ -71,7 +71,7 @@ export class SimulationController {
 	async initialize() {
 		// Set up canvas size
 		this._resizeCanvas();
-		window.addEventListener('resize', () => this._resizeCanvas());
+		window.addEventListener('resize', () => {return this._resizeCanvas()});
 
 		// Check for feature support
 		this.features = {
@@ -87,7 +87,7 @@ export class SimulationController {
 		// Create the grid
 		this.chunkGrid = Array(gridHeight)
 			.fill()
-			.map(() => Array(gridWidth).fill(null));
+			.map(() => {return Array(gridWidth).fill(null)});
 
 		// Initialize workers
 		await this._initializeWorkers();
@@ -279,7 +279,7 @@ export class SimulationController {
 		this.pause();
 
 		// Terminate all workers
-		this.workers.forEach((worker) => worker.terminate());
+		this.workers.forEach((worker) => {return worker.terminate()});
 		this.workers = [];
 
 		// Clear all data structures
@@ -334,9 +334,9 @@ export class SimulationController {
 		await new Promise((resolve) => {
 			const checkWorkers = () => {
 				const allInitialized = this.workers.every(
-					(w) => w.status === 'ready' || w.status === 'gpu-ready',
+					(w) => {return w.status === 'ready' || w.status === 'gpu-ready'},
 				);
-				if (allInitialized || this.workers.some((w) => w.status === 'failed')) {
+				if (allInitialized || this.workers.some((w) => {return w.status === 'failed'})) {
 					this.workersInitialized = allInitialized;
 					resolve();
 				} else {
@@ -369,7 +369,7 @@ export class SimulationController {
 				const height = Math.min(chunkSize, worldHeight - y * chunkSize);
 
 				// Skip if dimensions are invalid
-				if (width <= 0 || height <= 0) continue;
+				if (width <= 0 || height <= 0) {continue;}
 
 				// Create chunk information
 				const chunkId = `chunk-${x}-${y}`;
@@ -411,10 +411,10 @@ export class SimulationController {
 	 */
 	_assignChunkToWorker(chunkId, workerIndex) {
 		const chunk = this.chunks.get(chunkId);
-		if (!chunk) return;
+		if (!chunk) {return;}
 
 		const workerInfo = this.workers[workerIndex];
-		if (!workerInfo) return;
+		if (!workerInfo) {return;}
 
 		const { worker, id } = workerInfo;
 
@@ -586,7 +586,7 @@ export class SimulationController {
 	 */
 	_handleWorkerStatusUpdate(message) {
 		const { status, workerId } = message;
-		const workerInfo = this.workers.find((w) => w.id === workerId);
+		const workerInfo = this.workers.find((w) => {return w.id === workerId});
 
 		if (workerInfo) {
 			workerInfo.status = status;
@@ -623,10 +623,10 @@ export class SimulationController {
 		const { chunkId, entities, workerId } = message;
 		const chunk = this.chunks.get(chunkId);
 
-		if (!chunk) return;
+		if (!chunk) {return;}
 
 		// Update worker entity count
-		const workerInfo = this.workers.find((w) => w.id === workerId);
+		const workerInfo = this.workers.find((w) => {return w.id === workerId});
 		if (workerInfo) {
 			workerInfo.entityCount = entities.length;
 		}
@@ -665,9 +665,9 @@ export class SimulationController {
 
 		// Track FPS
 		this.frameTimes.push(deltaTime);
-		if (this.frameTimes.length > 60) this.frameTimes.shift();
+		if (this.frameTimes.length > 60) {this.frameTimes.shift();}
 
-		const avgFrameTime = this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length;
+		const avgFrameTime = this.frameTimes.reduce((a, b) => {return a + b}, 0) / this.frameTimes.length;
 		this.fps = 1000 / avgFrameTime;
 
 		// Clear the main canvas
@@ -699,7 +699,7 @@ export class SimulationController {
 	_renderEntities() {
 		for (const entity of this.entityMap.values()) {
 			// Skip entities with no energy
-			if (entity.energy <= 0) continue;
+			if (entity.energy <= 0) {continue;}
 
 			// Choose color based on species
 			let color;
@@ -801,9 +801,9 @@ export class SimulationController {
 			let carnivores = 0;
 
 			for (const entity of this.entityMap.values()) {
-				if (entity.species === 0) plants++;
-				else if (entity.species === 1) herbivores++;
-				else if (entity.species === 2) carnivores++;
+				if (entity.species === 0) {plants++;}
+				else if (entity.species === 1) {herbivores++;}
+				else if (entity.species === 2) {carnivores++;}
 			}
 
 			this.ctx.fillStyle = '#7fe084';
@@ -820,10 +820,10 @@ export class SimulationController {
 	 * @private
 	 */
 	_resizeCanvas() {
-		if (!this.canvas) return;
+		if (!this.canvas) {return;}
 
 		const container = this.canvas.parentElement;
-		if (!container) return;
+		if (!container) {return;}
 
 		const { width, height } = container.getBoundingClientRect();
 
