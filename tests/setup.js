@@ -192,6 +192,7 @@ export async function getWebGPUInfo(page) {
  * Configure test context based on browser WebGPU support
  * @param {import('@playwright/test').TestInfo} testInfo - Test information
  * @param {import('@playwright/test').Page} page - Playwright page object
+ * @returns {Promise<boolean>} Whether WebGPU is supported
  */
 export async function setupWebGPUTest(testInfo, page) {
 	// Detect WebGPU support
@@ -210,69 +211,9 @@ export async function setupWebGPUTest(testInfo, page) {
 		// Get detailed WebGPU info for debugging
 		const gpuInfo = await getWebGPUInfo(page);
 		console.log(`WebGPU adapter: ${gpuInfo.adapterInfo?.vendor || 'Unknown'}`);
+		return true;
 	}
 
-	return hasWebGPU;
-}
-
-/**
- * Mock implementation for test failures
- * This is useful when we need to test with WebGPU-like functionality
- * but the real implementation isn't complete yet
- */
-export async function setupMockWebGPUEnvironment(page) {
-	await page.evaluate(() => {
-		// Only mock if WebGPU is not available or we're running tests
-		if (!navigator.gpu || window.__TEST_MODE__) {
-			console.log('Setting up mock WebGPU for testing');
-
-			// Create mock WebGPU API
-			window.navigator.gpu = window.navigator.gpu || {
-				requestAdapter: async () => ({
-					requestDevice: async () => ({
-						createBuffer: () => ({}),
-						createShaderModule: () => ({}),
-						createComputePipeline: () => ({}),
-						queue: {
-							writeBuffer: () => {},
-							submit: () => {},
-						},
-					}),
-					features: new Set(),
-					limits: {},
-				}),
-			};
-
-			// Add global flag to indicate we're using mock WebGPU
-			window.__USING_WEBGPU_MOCK__ = true;
-
-			// Create mock simulator functionality
-			window.jessesWorld = window.jessesWorld || {
-				simulator: {
-					initialize: async () => true,
-					start: () => {},
-					stop: () => {},
-					resetSimulation: () => {},
-					spawnLifeform: () => {},
-				},
-				features: {
-					webGPU: true,
-					webWorker: true,
-					offscreenCanvas: true,
-				},
-				stats: {
-					entityCount: 50,
-					fps: 60,
-				},
-				isRunning: false,
-				tileManager: {
-					workers: [{}],
-					tiles: new Map([
-						['tile1', {}],
-						['tile2', {}],
-					]),
-				},
-			};
-		}
-	});
+	// Now we throw an error if WebGPU is not supported
+	throw new Error('WebGPU is required but not supported in the current browser');
 }

@@ -1,57 +1,82 @@
 // @ts-check
 import { expect, test } from '@playwright/test';
+import { requireWebGPU, verifyWebGPUInitialized } from './webgpu-test-utils.js';
 
 /**
- * Tests for WebGPU initialization detection
- * These are basic tests to verify WebGPU support in the browser environment
+ * WebGPU Initialization Tests
+ *
+ * These tests validate that WebGPU initializes correctly in Chrome
  */
 
 test.describe('WebGPU Initialization Tests', () => {
-  test('should detect WebGPU API in supported browsers', async ({ page, browserName }) => {
-    // Skip test for browsers we know don't support WebGPU yet
-    test.skip(browserName === 'webkit' || browserName === 'firefox',
-      `${browserName} doesn't fully support WebGPU yet`);
+  // Set a longer timeout for WebGPU initialization which can take time
+  test.setTimeout(30000);
 
-    // Navigate to the homepage
+  test.beforeEach(async ({ page }) => {
+    // Navigate to home page
     await page.goto('/');
 
-    // Check if WebGPU is detected in the browser
-    const hasWebGPU = await page.evaluate(() => {
-      return 'gpu' in navigator;
-    });
-
-    // Just log the result rather than fail tests in browsers without WebGPU
-    console.log(`WebGPU support detected in ${browserName}: ${hasWebGPU}`);
-
-    // For Chromium, we expect WebGPU to be available
-    if (browserName === 'chromium') {
-      expect(hasWebGPU).toBe(true);
-    }
+    // Verify WebGPU is available and initialized
+    await verifyWebGPUInitialized(page);
   });
 
-  test('should load our WebGPU canvas in supported browsers', async ({ page, browserName }) => {
-    // Skip test for browsers we know don't support WebGPU yet
-    test.skip(browserName === 'webkit' || browserName === 'firefox',
-      `${browserName} doesn't fully support WebGPU yet`);
+  test('should load our WebGPU canvas in Chromium', async ({ page }) => {
+    // Wait for canvas to be available
+    await page.waitForSelector('#simulator-preview-canvas canvas', {
+      state: 'attached',
+      timeout: 10000
+    });
 
-    // Navigate to homepage and wait for canvas to be created
-    await page.goto('/');
+    // Check that canvas is visible
     const canvas = page.locator('#simulator-preview-canvas canvas');
-
-    // Wait for canvas to be visible (even in fallback mode)
-    await expect(canvas).toBeVisible({ timeout: 10000 });
-
-    // Take a screenshot of the canvas for verification
-    await canvas.screenshot({ path: `snapshots/webgpu-canvas-${browserName}.png` });
+    await expect(canvas).toBeVisible();
   });
 
   test('should enable UI controls after initialization', async ({ page }) => {
-    // Navigate to the homepage
-    await page.goto('/');
+    // Wait for UI controls to be enabled - we use a timeout to allow for initialization
+    await expect(page.locator('#spawn-life')).not.toBeDisabled({timeout: 15000});
+    await expect(page.locator('#toggle-simulation')).not.toBeDisabled({timeout: 5000});
+    await expect(page.locator('#reset-preview')).not.toBeDisabled({timeout: 5000});
+  });
 
-    // Wait for controls to be enabled
-    await expect(page.locator('#spawn-life')).not.toBeDisabled({ timeout: 15000 });
-    await expect(page.locator('#toggle-simulation')).not.toBeDisabled();
-    await expect(page.locator('#reset-preview')).not.toBeDisabled();
+  test('should show WebGPU status in compatibility notice', async ({ page }) => {
+    // Get the compatibility notice element
+    const notice = page.locator('#compatibility-notice');
+
+    // Since we require WebGPU, we should always see the supported message
+    await expect(notice).toContainText('supports WebGPU', { timeout: 10000 });
+  });
+
+  test('should have global access to jessesWorld object', async ({ page }) => {
+    // Wait for initialization to complete
+    await page.waitForFunction(() => window.jessesWorld !== undefined, { timeout: 15000 });
+
+    // Verify that jessesWorld object is accessible
+    const hasJessesWorld = await page.evaluate(() => {
+      return typeof window.jessesWorld === 'object' &&
+             window.jessesWorld !== null;
+    });
+
+    expect(hasJessesWorld).toBeTruthy();
+  });
+
+  test('should initialize WebGPU adapter and device', async ({ page }) => {
+    // Check that WebGPU was properly initialized
+    const webgpuStatus = await page.evaluate(async () => {
+      if (!window.jessesWorld?.simulator) {
+        return { initialized: false, error: 'Simulator not found' };
+      }
+
+      return {
+        initialized: true,
+        hasAdapter: !!window.jessesWorld.simulator.adapter,
+        hasDevice: !!window.jessesWorld.simulator.device,
+        features: Array.from(window.jessesWorld.simulator.adapter?.features || [])
+      };
+    });
+
+    expect(webgpuStatus.initialized).toBe(true);
+    expect(webgpuStatus.hasAdapter).toBe(true);
+    expect(webgpuStatus.hasDevice).toBe(true);
   });
 });

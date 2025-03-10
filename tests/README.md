@@ -1,24 +1,15 @@
-# Integrated Testing Framework
+# Functional Testing Framework
 
-This document outlines our comprehensive testing framework that covers accessibility, performance, visual regression, security, and functional testing - all derived automatically from the sitemap.
+This document outlines our focused testing framework for functional end-to-end browser tests using Playwright.
 
 ## System Requirements
 
-- **Linux Operating System**: The testing framework is designed to run exclusively on Linux
 - **Node.js**: v16 or higher
 - **Bash Shell**: Required for environment variable syntax in npm scripts
 
-> **Note**: This framework does not support Windows environments. For development on Windows machines, consider using WSL (Windows Subsystem for Linux).
-
 ## Overview
 
-Our testing framework automatically generates test scaffolds for each page in the application by reading the sitemap.xml file. Each page has tests for:
-
-- **Accessibility**: WCAG compliance and keyboard navigation
-- **Performance**: Core Web Vitals and performance metrics
-- **Visual Testing**: Screenshots for desktop and mobile
-- **Security**: Headers, CSP, and vulnerable libraries
-- **Functional**: User journeys and interactions
+Our testing framework focuses exclusively on functional end-to-end browser tests. We use Playwright to simulate real user interactions and verify expected behavior in the application.
 
 ## Getting Started
 
@@ -31,11 +22,20 @@ Our testing framework automatically generates test scaffolds for each page in th
 
 ### Test Command Workflows
 
-The npm scripts are organized into common workflows for different testing scenarios:
+The npm scripts are organized for efficient test execution:
 
 #### Quick Development Cycle
 1. Start the dev server: `npm run dev`
-2. Run focused tests: `npm run test:e2e` or `npm run test:unit`
+2. Run focused tests: `npm run test:e2e`
+3. If issues occur: `npm run test:debug` or `npm run test:ui`
+
+### Test Command Organization
+
+The npm scripts are organized into logical groups:
+
+#### Common Testing Commands
+```bash
+npm test         # Run all tests
 3. If issues occur: `npm run test:debug` or `npm run test:ui`
 
 #### Visual Testing Workflow

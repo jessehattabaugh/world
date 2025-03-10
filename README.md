@@ -43,7 +43,7 @@ Our vision is to educate users on complex ecological concepts through interactiv
 | UI & Visualization | Chart.js (statistics), HTML/CSS (interface), Tweakpane (interactive UI), custom camera & slippy map |
 | State Management | Service Workers, idb (IndexedDB wrapper) |
 | WebGPU Utilities | @webgpu/types, wgsl-preprocessor (WGSL shader management) |
-| Testing & CI | Playwright (Visual regression and functional E2E tests) |
+| Testing & CI | Playwright (Functional E2E tests) |
 
 ### Development Roadmap
 
@@ -81,9 +81,9 @@ Our vision is to educate users on complex ecological concepts through interactiv
 ### Testing Methodology
 
 **Test-Driven Development**: Implement Playwright end-to-end tests covering:
-- Shader correctness (output validation)
-- UI interactions and regression visual tests
-- Performance and scalability tests to ensure GPU-accelerated features perform within targets
+- Functional behavior of simulation
+- UI interactions and expected outcomes
+- Core user journeys through the application
 
 ### Deployment
 
@@ -116,7 +116,7 @@ This project will demonstrate the power of modern web APIs (WebGPU, Web Workers,
 - **Performance First**: Optimize critical paths and minimize main thread blocking
 - **Accessibility Matters**: Support keyboard navigation, screen readers, and reduced motion preferences
 - **Mobile Consideration**: Design for touch interfaces alongside desktop interactions
-- **Testing Always**: Every feature must include appropriate tests (unit, visual, performance)
+- **Testing Always**: Every feature must include appropriate functional tests
 
 #### Code Standards
 - **Modern JavaScript**: Use ES Modules, async/await, and modern DOM APIs
@@ -132,7 +132,6 @@ This project will demonstrate the power of modern web APIs (WebGPU, Web Workers,
 - **Feature Branches**: All new features developed in separate branches
 - **Pull Requests**: All changes require PR review before merging
 - **Testing Requirements**: PR must pass all automated tests
-- **Performance Budget**: New features must not regress performance metrics beyond thresholds
 
 ## Setup
 
@@ -153,58 +152,19 @@ npm run dev
 
 ## Testing
 
-The project includes several types of automated tests organized by their function and frequency of use. Key test scripts are grouped by purpose and ordered by usage frequency.
+The project uses Playwright for end-to-end functional browser tests.
 
-### Commonly Used Commands
+### Testing Commands
 ```bash
-npm start          # Start the application
-npm test          # Run all tests
-npm run dev       # Start development server
-npm run test:ui   # Run tests with UI mode
+npm test           # Run all tests
 npm run test:debug # Run tests with debugger
+npm run test:ui    # Run tests with UI mode
+npm run test:e2e   # Run end-to-end tests
+npm run report     # Show test report
 ```
 
-### Test Categories
-```bash
-npm run test:unit    # Unit tests only
-npm run test:e2e     # End-to-end tests
-npm run test:visual  # Visual regression tests
-npm run test:perf    # Performance tests
-npm run test:stress  # Stress tests
-npm run test:memory  # Memory leak tests
-
-# Run comprehensive test suites
-npm run test:all     # All tests in sequence
-```
-
-### Visual Testing
-```bash
-npm run visual          # Run visual tests
-npm run visual:update   # Update visual baselines
-npm run visual:compare  # Compare against baselines
-npm run shots          # Generate screenshots
-npm run shots:accept   # Accept new screenshots
-```
-
-### Performance Testing
-```bash
-npm run perf           # Run all performance tests
-npm run perf:benchmark # Run benchmarks
-npm run perf:monitor   # Monitor performance
-npm run perf:analyze   # Analyze bundle and Lighthouse
-```
-
-For detailed information about the testing strategy and implementation:
+For detailed information about the testing approach:
 - [Tests Documentation](./tests/README.md)
-- [Performance Documentation](./performance/README.md)
-- [Visual Testing Documentation](./snapshots/README.md)
-
-### Test Reports
-
-- Test results: `playwright-report/`
-- Screenshots: `snapshots/`
-- Performance data: `performance/`
-- Shader test results: `reports/shaders/`
 
 ## Development
 

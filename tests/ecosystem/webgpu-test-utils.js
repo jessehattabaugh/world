@@ -12,54 +12,60 @@ export const test = base.extend({
 	// Add a WebGPU fixture that checks for support
 	webgpuSupported: async ({ page }, use, testInfo) => {
 		const hasWebGPU = await setupWebGPUTest(testInfo, page);
-		await use(hasWebGPU);
+
+		// Throw an error if WebGPU is not supported
+		if (!hasWebGPU) {
+			throw new Error(
+				'WebGPU is required for these tests but not supported in the current browser',
+			);
+		}
+
+		await use(true); // Always true since we throw if not supported
 	},
 });
 
 /**
- * Skip a test if WebGPU is not supported
+ * Skip a test if WebGPU is not supported - now throws an error instead
  * @param {import('@playwright/test').TestInfo} testInfo - Test information
  * @param {boolean} webgpuSupported - Whether WebGPU is supported
  * @returns {boolean} - Whether the test was skipped
  */
-export function skipWithoutWebGPU(testInfo, webgpuSupported) {
-  if (!webgpuSupported) {
-		test.skip(true, `Skipping test - WebGPU not supported`);
-		return true;
-  }
-  return false;
+export function requireWebGPU(testInfo, webgpuSupported) {
+	if (!webgpuSupported) {
+		throw new Error(
+			`WebGPU is required for test '${testInfo.title}' but not supported in the current browser`,
+		);
+	}
+	return false;
 }
 
 /**
- * Create a mock WebGPU environment for tests when real WebGPU is unavailable
+ * Check that WebGPU is initialized correctly
  * @param {import('@playwright/test').Page} page - Playwright page
  */
-export async function setupMockWebGPU(page) {
-  await page.evaluate(() => {
-		// Only mock if WebGPU is not available
-		if (!navigator.gpu) {
-			console.log('Setting up mock WebGPU environment for testing');
+export async function verifyWebGPUInitialized(page) {
+	// Verify that WebGPU is available
+	const hasWebGPU = await page.evaluate(() => {
+		return !!navigator.gpu;
+	});
 
-			// Create a minimal mock implementation
-			window.navigator.gpu = {
-				requestAdapter: async () => ({
-					requestDevice: async () => ({
-						createBuffer: () => ({}),
-						createShaderModule: () => ({}),
-						createComputePipeline: () => ({}),
-						queue: {
-							writeBuffer: () => {},
-							submit: () => {},
-						},
-						destroy: () => {},
-					}),
-					features: new Set(),
-					limits: {},
-				}),
-			};
+	if (!hasWebGPU) {
+		throw new Error('WebGPU is not available in the browser');
+	}
 
-			// Let the app know we're using a mock
-			window.__USING_WEBGPU_MOCK__ = true;
+	// Verify that an adapter can be requested
+	const hasAdapter = await page.evaluate(async () => {
+		try {
+			const adapter = await navigator.gpu.requestAdapter();
+			return !!adapter;
+		} catch (e) {
+			return false;
 		}
-  });
+	});
+
+	if (!hasAdapter) {
+		throw new Error('Failed to request WebGPU adapter');
+	}
+
+	return true;
 }
