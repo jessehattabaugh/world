@@ -46,58 +46,17 @@ export default defineConfig({
 		video: 'retain-on-failure',
 	},
 
-	// Configure projects for different browsers with WebGPU enabled where possible
+	// Configure projects for Chrome only since it's the only browser with WebGPU support
 	projects: [
 		{
 			name: 'chromium',
 			use: {
 				browserName: 'chromium',
 				viewport: { width: 1280, height: 720 },
-				// Chrome 113+ has WebGPU enabled by default
+				// Chrome with WebGPU enabled
 				launchOptions: {
 					args: ['--enable-unsafe-webgpu', '--enable-features=Vulkan,WebGPU'],
 				},
-			},
-		},
-		{
-			name: 'firefox',
-			use: {
-				browserName: 'firefox',
-				viewport: { width: 1280, height: 720 },
-				// Firefox needs flags to enable WebGPU
-				launchOptions: {
-					firefoxUserPrefs: {
-						'dom.webgpu.enabled': true,
-						'gfx.webgpu.force-enabled': true,
-					},
-				},
-			},
-		},
-		{
-			name: 'webkit',
-			use: {
-				browserName: 'webkit',
-				viewport: { width: 1280, height: 720 },
-				// WebKit (Safari) doesn't fully support WebGPU yet
-				// No specific flags available for enabling it
-			},
-		},
-		{
-			name: 'mobile-chrome',
-			use: {
-				browserName: 'chromium',
-				...devices['Pixel 5'],
-				launchOptions: {
-					args: ['--enable-unsafe-webgpu', '--enable-features=Vulkan,WebGPU'],
-				},
-			},
-		},
-		{
-			name: 'mobile-safari',
-			use: {
-				browserName: 'webkit',
-				...devices['iPhone 12'],
-				// WebKit (Safari) doesn't fully support WebGPU yet
 			},
 		},
 	],

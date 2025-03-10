@@ -30,13 +30,13 @@ test.describe('Ecosystem Simulator - Milestone 1', () => {
     await expect(page.locator('#reset-preview')).not.toBeDisabled({ timeout: 5000 });
   });
 
-  test('should detect WebGPU when available', async ({ page, webgpuSupported, browserName }, testInfo) => {
-    // Skip test if WebGPU is not supported
-    if (skipWithoutWebGPU(testInfo, webgpuSupported)) return;
+  test('should detect WebGPU when available', async ({ page, webgpuSupported }, testInfo) => {
+		// Skip test if WebGPU is not supported
+		if (skipWithoutWebGPU(testInfo, webgpuSupported)) return;
 
-    // Check for compatibility notice - this test will run only if the browser supports WebGPU
-    const compatNotice = await page.locator('#compatibility-notice');
-    await expect(compatNotice).toContainText('supports WebGPU', { timeout: 5000 });
+		// Check for compatibility notice - this test will run only if the browser supports WebGPU
+		const compatNotice = await page.locator('#compatibility-notice');
+		await expect(compatNotice).toContainText('supports WebGPU', { timeout: 5000 });
   });
 
   test('should show appropriate WebGPU warning dialog for unsupported browsers', async ({ page, webgpuSupported }, testInfo) => {
@@ -172,7 +172,7 @@ test.describe('Web Workers & OffscreenCanvas - Milestone 1', () => {
   });
 });
 
-// Tests for WebGPU feature detection and fallbacks
+// Tests for WebGPU feature detection
 test.describe('WebGPU Feature Detection - Milestone 1', () => {
   test('should detect WebGPU availability and features', async ({ page }) => {
     await page.goto('/');

@@ -23,11 +23,11 @@ export const test = base.extend({
  * @returns {boolean} - Whether the test was skipped
  */
 export function skipWithoutWebGPU(testInfo, webgpuSupported) {
-	if (!webgpuSupported) {
-		test.skip(true, `Skipping WebGPU test in ${testInfo.project.name} - WebGPU not supported`);
+  if (!webgpuSupported) {
+		test.skip(true, `Skipping test - WebGPU not supported`);
 		return true;
-	}
-	return false;
+  }
+  return false;
 }
 
 /**
@@ -35,7 +35,7 @@ export function skipWithoutWebGPU(testInfo, webgpuSupported) {
  * @param {import('@playwright/test').Page} page - Playwright page
  */
 export async function setupMockWebGPU(page) {
-	await page.evaluate(() => {
+  await page.evaluate(() => {
 		// Only mock if WebGPU is not available
 		if (!navigator.gpu) {
 			console.log('Setting up mock WebGPU environment for testing');
@@ -61,5 +61,5 @@ export async function setupMockWebGPU(page) {
 			// Let the app know we're using a mock
 			window.__USING_WEBGPU_MOCK__ = true;
 		}
-	});
+  });
 }
