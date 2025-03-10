@@ -1,9 +1,10 @@
-import { test, expect } from '@playwright/test';
-import path from 'path';
-import fs from 'fs';
+import { expect, test } from '@playwright/test';
+
 import {
 	assertPerformanceBaseline,
 } from './utils/performance-utils.js';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Tests for the theme toggle component
@@ -49,6 +50,130 @@ test.describe('Theme Toggle', () => {
 		}
 	}
 
+	/**
+	 * Helper function to try multiple selector strategies to find the theme toggle
+	 */
+	async function findToggleElement(page) {
+		const isMobileSafari = await page.evaluate(() => {
+			const { userAgent } = navigator;
+			return (
+				/iPhone|iPad/i.test(userAgent) &&
+				/Safari/i.test(userAgent) &&
+				!/Chrome/i.test(userAgent)
+			);
+		});
+
+		// In mobile Safari, we might need additional waiting time or different selectors
+		if (isMobileSafari) {
+			// Try multiple selectors that might match the theme toggle
+			console.log('Mobile Safari detected, using enhanced toggle detection');
+
+			// Wait longer for mobile Safari
+			await page.waitForTimeout(1000);
+
+			// Try different possible selectors for the theme toggle
+			const selectors = [
+				'[data-testid="theme-toggle"]',
+				'.theme-toggle',
+				'button[aria-label*="theme"]',
+				'button.theme-switch',
+				// Add any other potential selectors
+			];
+
+			// Try each selector
+			for (const selector of selectors) {
+				try {
+					const element = await page.$(selector);
+					if (element) {
+						console.log(`Found theme toggle with selector: ${selector}`);
+						return element;
+					}
+				} catch (e) {
+					console.log(`Selector ${selector} failed: ${e.message}`);
+				}
+			}
+
+			console.error('Theme toggle not found in mobile Safari with any known selectors');
+			return null;
+		}
+
+		// Original implementation for other browsers
+		// Try various selector strategies in order of preference
+
+		// 1. Proper accessible switch role
+		try {
+			const toggle = page.getByRole('switch', { name: /toggle theme/i });
+			if (
+				await toggle.isVisible({ timeout: 2000 }).catch(() => {
+					return false;
+				})
+			) {
+				return toggle;
+			}
+		} catch (e) {
+			console.log('Switch role selector failed:', e.message);
+		}
+
+		// 2. Try button role with theme-related text
+		try {
+			const toggleButton = page.getByRole('button', { name: /(theme|dark|light|mode)/i });
+			if (
+				await toggleButton.isVisible({ timeout: 2000 }).catch(() => {
+					return false;
+				})
+			) {
+				return toggleButton;
+			}
+		} catch (e) {
+			console.log('Button role selector failed:', e.message);
+		}
+
+		// 3. Try common theme toggle class names or IDs
+		const possibleSelectors = [
+			'#theme-toggle',
+			'.theme-toggle',
+			'#darkModeToggle',
+			'.dark-mode-toggle',
+			'[aria-label*="theme" i]',
+			'[data-testid="theme-toggle"]',
+		];
+
+		for (const selector of possibleSelectors) {
+			try {
+				const element = page.locator(selector);
+				if (
+					await element.isVisible({ timeout: 1000 }).catch(() => {
+						return false;
+					})
+				) {
+					console.log('Found toggle with selector:', selector);
+					return element;
+				}
+			} catch (e) {
+				// Continue to next selector
+			}
+		}
+
+		// 4. Last resort - look for any icon button that might be the theme toggle
+		try {
+			const allButtons = await page.locator('button').all();
+			for (const button of allButtons) {
+				const hasIcon = (await button.locator('svg, img, i').count()) > 0;
+				if (hasIcon) {
+					const text = await button.textContent();
+					if (!text || text.trim() === '') {
+						console.log('Found potential icon-only button that might be theme toggle');
+						return button;
+					}
+				}
+			}
+		} catch (e) {
+			console.log('Icon button search failed:', e.message);
+		}
+
+		return null;
+	}
+
 	// Start tests in dark mode
 	test.beforeEach(async ({ page }) => {
 		await enableDarkMode(page);
@@ -68,7 +193,7 @@ test.describe('Theme Toggle', () => {
 
 		// Verify we start in dark mode
 		expect(initialIsDarkMode).toBeTruthy({
-			message: '🌓 Page should start in dark mode'
+			message: '🌓 Page should start in dark mode',
 		});
 
 		// Change theme
@@ -79,7 +204,7 @@ test.describe('Theme Toggle', () => {
 			return document.documentElement.classList.contains('dark-mode');
 		});
 		expect(newIsDarkMode).not.toBe(initialIsDarkMode, {
-			message: '🌓 Theme should change after clicking toggle'
+			message: '🌓 Theme should change after clicking toggle',
 		});
 
 		// Reload the page to verify persistence
@@ -90,7 +215,7 @@ test.describe('Theme Toggle', () => {
 			return document.documentElement.classList.contains('dark-mode');
 		});
 		expect(persistedIsDarkMode).toBe(newIsDarkMode, {
-			message: '💾 Theme preference should be remembered after page reload'
+			message: '💾 Theme preference should be remembered after page reload',
 		});
 	});
 
@@ -101,7 +226,7 @@ test.describe('Theme Toggle', () => {
 		// Find the theme toggle
 		const themeToggle = await findToggleElement(page);
 		await expect(themeToggle).toBeVisible({
-			message: '🔍 Theme toggle should be visible on the page'
+			message: '🔍 Theme toggle should be visible on the page',
 		});
 
 		// Get initial theme state
@@ -111,7 +236,7 @@ test.describe('Theme Toggle', () => {
 
 		// Take screenshot before clicking
 		await expect(themeToggle).toHaveScreenshot('theme-toggle-before-click-baseline.png', {
-			message: '📸 Theme toggle should match baseline before click'
+			message: '📸 Theme toggle should match baseline before click',
 		});
 
 		// Click toggle and check if theme changed
@@ -120,14 +245,14 @@ test.describe('Theme Toggle', () => {
 
 		// Take screenshot after clicking
 		await expect(themeToggle).toHaveScreenshot('theme-toggle-after-click-baseline.png', {
-			message: '📸 Theme toggle should match baseline after click'
+			message: '📸 Theme toggle should match baseline after click',
 		});
 
 		const newIsDark = await page.evaluate(() => {
 			return document.documentElement.classList.contains('dark-mode');
 		});
 		expect(newIsDark).not.toBe(initialIsDark, {
-			message: '🌓 Theme mode should toggle between light and dark'
+			message: '🌓 Theme mode should toggle between light and dark',
 		});
 	});
 
@@ -251,7 +376,7 @@ test.describe('Theme Toggle', () => {
 
 			// Log the page HTML for debugging
 			const html = await page.content();
-			console.log('Page HTML:', `${html.substring(0, 1000)  }...`);
+			console.log('Page HTML:', `${html.substring(0, 1000)}...`);
 		}
 
 		// Now check if the element is there before attempting to interact
@@ -297,112 +422,4 @@ test.describe('Theme Toggle', () => {
 		// Ensure theme toggle operation is fast
 		expect(toggleOperationTime.operationTime).toBeLessThan(500); // Toggle should be under 500ms
 	});
-
-	/**
-	 * Helper function to try multiple selector strategies to find the theme toggle
-	 */
-	async function findToggleElement(page) {
-		const isMobileSafari = await page.evaluate(() => {
-			const {userAgent} = navigator;
-			return /iPhone|iPad/i.test(userAgent) && /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent);
-		});
-
-		// In mobile Safari, we might need additional waiting time or different selectors
-		if (isMobileSafari) {
-			// Try multiple selectors that might match the theme toggle
-			console.log('Mobile Safari detected, using enhanced toggle detection');
-
-			// Wait longer for mobile Safari
-			await page.waitForTimeout(1000);
-
-			// Try different possible selectors for the theme toggle
-			const selectors = [
-				'[data-testid="theme-toggle"]',
-				'.theme-toggle',
-				'button[aria-label*="theme"]',
-				'button.theme-switch',
-				// Add any other potential selectors
-			];
-
-			// Try each selector
-			for (const selector of selectors) {
-				try {
-					const element = await page.$(selector);
-					if (element) {
-						console.log(`Found theme toggle with selector: ${selector}`);
-						return element;
-					}
-				} catch (e) {
-					console.log(`Selector ${selector} failed: ${e.message}`);
-				}
-			}
-
-			console.error('Theme toggle not found in mobile Safari with any known selectors');
-			return null;
-		}
-
-		// Original implementation for other browsers
-		// Try various selector strategies in order of preference
-
-		// 1. Proper accessible switch role
-		try {
-			const toggle = page.getByRole('switch', { name: /toggle theme/i });
-			if (await toggle.isVisible({ timeout: 2000 }).catch(() => {return false})) {
-				return toggle;
-			}
-		} catch (e) {
-			console.log('Switch role selector failed:', e.message);
-		}
-
-		// 2. Try button role with theme-related text
-		try {
-			const toggleButton = page.getByRole('button', { name: /(theme|dark|light|mode)/i });
-			if (await toggleButton.isVisible({ timeout: 2000 }).catch(() => {return false})) {
-				return toggleButton;
-			}
-		} catch (e) {
-			console.log('Button role selector failed:', e.message);
-		}
-
-		// 3. Try common theme toggle class names or IDs
-		const possibleSelectors = [
-			'#theme-toggle',
-			'.theme-toggle',
-			'#darkModeToggle',
-			'.dark-mode-toggle',
-			'[aria-label*="theme" i]',
-			'[data-testid="theme-toggle"]'
-		];
-
-		for (const selector of possibleSelectors) {
-			try {
-				const element = page.locator(selector);
-				if (await element.isVisible({ timeout: 1000 }).catch(() => {return false})) {
-					console.log('Found toggle with selector:', selector);
-					return element;
-				}
-			} catch (e) {
-				// Continue to next selector
-			}
-		}
-
-		// 4. Last resort - look for any icon button that might be the theme toggle
-		try {
-			const allButtons = await page.locator('button').all();
-			for (const button of allButtons) {
-				const hasIcon = await button.locator('svg, img, i').count() > 0;
-				if (hasIcon) {
-					const text = await button.textContent();
-					if (!text || text.trim() === '') {
-						console.log('Found potential icon-only button that might be theme toggle');
-						return button;
-					}
-				}
-			}
-		} catch (e) {
-			console.log('Icon button search failed:', e.message);
-		}
-
-		return null;
-	}
 });

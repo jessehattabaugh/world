@@ -1,8 +1,8 @@
+import fs from 'fs';
 /**
  * Common test helpers used across multiple test files
  */
 import path from 'path';
-import fs from 'fs';
 
 /**
  * Clears browser storage and preferences
@@ -70,16 +70,21 @@ export async function findToggleElement(page) {
     '[data-testid="theme-toggle"]'
   ];
 
-  for (const selector of possibleSelectors) {
-    try {
-      const element = page.locator(selector);
-      if (await element.isVisible({ timeout: 1000 }).catch(() => {return false})) {
-        console.log('Found toggle with selector:', selector);
-        return element;
-      }
-    } catch (e) {
-      // Continue to next selector
-    }
+  const elements = await Promise.all(
+		possibleSelectors.map((selector) => {
+			return page
+				.locator(selector)
+				.isVisible({ timeout: 1000 })
+				.catch(() => {
+					return false;
+				});
+		}),
+  );
+  for (let i = 0; i < elements.length; i++) {
+		if (elements[i]) {
+			console.log('Found toggle with selector:', possibleSelectors[i]);
+			return page.locator(possibleSelectors[i]);
+		}
   }
 
   // 4. Last resort - look for any icon button that might be the theme toggle

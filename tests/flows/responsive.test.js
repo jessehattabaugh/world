@@ -1,9 +1,10 @@
+import { createPageFixture, expectScreenshot, getBaseUrl } from '../setup.js';
 /**
  * Responsive behavior flow tests
  */
 import { describe, it } from 'node:test';
+
 import assert from 'node:assert';
-import { createPageFixture, getBaseUrl, expectScreenshot } from '../setup.js';
 import { wait } from '../utils/test-helpers.js';
 
 describe('Responsive Behavior Flows', () => {
@@ -93,11 +94,20 @@ describe('Responsive Behavior Flows', () => {
 
         const nav = document.querySelector('nav');
 
+        let menuType;
+		if (menuButton) {
+			menuType = 'hamburger';
+		} else if (nav) {
+			menuType = 'visible';
+		} else {
+			menuType = 'none';
+		}
+
         return {
-          hasMenuButton: !!menuButton,
-          navVisible: nav && getComputedStyle(nav).display !== 'none',
-          menuType: menuButton ? 'hamburger' : (nav ? 'visible' : 'none')
-        };
+			hasMenuButton: !!menuButton,
+			navVisible: nav && getComputedStyle(nav).display !== 'none',
+			menuType,
+		};
       });
 
       // Document the navigation pattern found

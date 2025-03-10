@@ -8,11 +8,11 @@
  * security tests.
  */
 
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { parseStringPromise } from 'xml2js';
 import { existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
+import { parseStringPromise } from 'xml2js';
+import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');

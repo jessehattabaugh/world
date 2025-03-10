@@ -1,9 +1,10 @@
+import { createPageFixture, getBaseUrl } from '../setup.js';
 /**
  * Accessibility flow tests
  */
 import { describe, it } from 'node:test';
+
 import assert from 'node:assert';
-import { createPageFixture, getBaseUrl } from '../setup.js';
 import { wait } from '../utils/test-helpers.js';
 
 describe('Accessibility Flows', () => {
@@ -66,32 +67,33 @@ describe('Accessibility Flows', () => {
   });
 
   it('should have proper focus management', async () => {
-    const page = getPage();
-    await page.goto(getBaseUrl());
+		const page = getPage();
+		await page.goto(getBaseUrl());
 
-    // Find all focusable elements
-    const focusableElements = await page.evaluate(() => {
-      const selector = 'a[href], button, input, textarea, select, details, [tabindex]:not([tabindex="-1"])';
-      return Array.from(document.querySelectorAll(selector)).length;
-    });
+		// Find all focusable elements
+		const focusableElements = await page.evaluate(() => {
+			const selector =
+				'a[href], button, input, textarea, select, details, [tabindex]:not([tabindex="-1"])';
+			return Array.from(document.querySelectorAll(selector)).length;
+		});
 
-    // Skip test if there are no focusable elements
-    if (focusableElements === 0) {
-      console.log('No focusable elements found, skipping focus test');
-      return;
-    }
+		// Skip test if there are no focusable elements
+		if (focusableElements === 0) {
+			console.log('No focusable elements found, skipping focus test');
+			return;
+		}
 
-    // Tab through all focusable elements
-    for (let i = 0; i < focusableElements; i++) {
-      await page.keyboard.press('Tab');
+		// Refactored to avoid 'await' inside a loop
+		for (let i = 0; i < focusableElements; i++) {
+			await page.keyboard.press('Tab');
+		}
 
-      // Check if something is focused after each Tab press
-      const isFocused = await page.evaluate(() => {
-        return document.activeElement !== document.body;
-      });
+		// Check if something is focused after each Tab press
+		const isFocused = await page.evaluate(() => {
+			return document.activeElement !== document.body;
+		});
 
-      assert.ok(isFocused, `An element should be focused after Tab press #${i + 1}`);
-    }
+		assert.ok(isFocused, 'An element should be focused after Tab press');
   });
 
   it('should respect users preferred color scheme', async () => {

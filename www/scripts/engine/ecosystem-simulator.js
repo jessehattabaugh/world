@@ -178,7 +178,7 @@ export class EcosystemSimulator {
     if (!this.state.isInitialized || !this.coreSimulation) {
       throw new Error('Simulation not initialized');
     }
-    return await this.coreSimulation.reproduce(parent1Id, parent2Id);
+    return this.coreSimulation.reproduce(parent1Id, parent2Id);
   }
 
   /**

@@ -5,12 +5,12 @@
  * based on URLs in the sitemap.xml
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { chromium } from '@playwright/test';
-import { parseStringPromise } from 'xml2js';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 import { getAllPerformanceMetrics } from '../tests/utils/performance-utils.js';
+import { parseStringPromise } from 'xml2js';
+import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -108,7 +108,7 @@ async function getUrlsFromSitemap() {
 		}
 
 		return sitemapData.urlset.url.map((entry) => {
-			const url = entry.loc[0];
+			const [url] = entry.loc;
 			const pageId = urlToPageId(url);
 
 			return {

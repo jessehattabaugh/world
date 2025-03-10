@@ -3,9 +3,9 @@
  * This replaces the rimraf command in package.json
  */
 
+import { execSync } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
-import { execSync } from 'child_process';
 
 const SNAPSHOTS_DIR = path.join(process.cwd(), 'snapshots');
 
@@ -31,7 +31,7 @@ async function cleanSnapshots() {
 		});
 
 		// Delete each item that's not a baseline or .md file
-		for (const item of itemsToRemove) {
+		const cleanPromises = itemsToRemove.map(async (item) => {
 			const itemPath = path.join(SNAPSHOTS_DIR, item);
 
 			// Check if it's a file or directory
@@ -46,7 +46,9 @@ async function cleanSnapshots() {
 				await fs.unlink(itemPath);
 				console.log(`Deleted file: ${item}`);
 			}
-		}
+		});
+
+		await Promise.all(cleanPromises);
 
 		console.log('Snapshot cleanup complete!');
 

@@ -2,9 +2,10 @@
  * Global test setup file for Node.js built-in test runner
  */
 import { afterEach, beforeEach } from 'node:test';
+
 import { chromium } from '@playwright/test';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 
 // Ensure snapshot directories exist
 const snapshotDir = path.join(process.cwd(), 'snapshots');
@@ -64,9 +65,9 @@ export function createPageFixture() {
 
   beforeEach(async () => {
     try {
-      const setup = await setupBrowser();
-      browser = setup.browser;
-      page = setup.page;
+      const { browser: setupBrowser, page: setupPage } = await setupBrowser();
+		browser = setupBrowser;
+		page = setupPage;
     } catch (error) {
       console.error('Error in beforeEach hook:', error);
       throw error;

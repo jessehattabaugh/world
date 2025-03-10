@@ -4,8 +4,6 @@
  */
 
 import { execSync } from 'child_process';
-import fs from 'fs/promises';
-import path from 'path';
 
 async function findImportReferences() {
   console.log("Searching for files that import './utils/performance-utils.js'...");
@@ -35,19 +33,20 @@ async function findImportReferences() {
 
   // Also look for dynamic imports
   try {
-    const dynamicGrepCommand = "grep -r \"import(.*utils/performance-utils.js.*)\" --include=\"*.js\" .";
+		const dynamicGrepCommand =
+			'grep -r "import(.*utils/performance-utils.js.*)" --include="*.js" .';
 
-    const dynamicResult = execSync(dynamicGrepCommand, {
-      cwd: process.cwd(),
-      encoding: 'utf8'
-    });
+		const dynamicResult = execSync(dynamicGrepCommand, {
+			cwd: process.cwd(),
+			encoding: 'utf8',
+		});
 
-    if (dynamicResult) {
-      console.log('\nFiles with dynamic imports:');
-      console.log(dynamicResult);
-    }
-  } catch (error) {
-    // Ignore if no matches
+		if (dynamicResult) {
+			console.log('\nFiles with dynamic imports:');
+			console.log(dynamicResult);
+		}
+  } catch {
+		// Ignore if no matches
   }
 }
 

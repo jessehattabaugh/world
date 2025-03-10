@@ -299,8 +299,7 @@ export class TechnoGenerator {
     this.step = (this.step + 1) % this.patternLength;
 
     // Schedule next step
-    const {currentTime} = this.audioContext;
-    const lookahead = 0.1; // seconds
+    const { currentTime } = this.audioContext;
 
     const delay = Math.max(0, (this.nextNoteTime - currentTime - 0.05) * 1000);
     this.timerId = setTimeout(() => {return this.schedule()}, delay);

@@ -1,28 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Get base URL from environment variable or use default
- * This allows testing different environments (local, staging, production)
- */
-const getBaseUrl = () => {
-	// If BASE_URL is explicitly provided, it takes precedence
-	if (process.env.BASE_URL) {
-		return process.env.BASE_URL;
-	}
-
-	// Otherwise use environment-specific defaults
-	if (process.env.TEST_ENV === 'staging') {
-		return process.env.STAGING_URL || 'https://staging.example.com';
-	}
-	if (process.env.TEST_ENV === 'production') {
-		return process.env.PROD_URL || 'https://production.example.com';
-	}
-
-	// Default to localhost for local development
-	return 'http://localhost:3000';
-};
-
-/**
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({

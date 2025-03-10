@@ -135,17 +135,17 @@ test.describe('Ecosystem Mechanics - Milestone 2', () => {
 
         // Attempt reproduction
         try {
-          await simulator.reproduce(predator.id, prey.id);
-          return {
-            preventedReproduction: false,
-            populationUnchanged: simulator.stats.entityCount === initialCount
-          };
-        } catch (e) {
-          return {
-            preventedReproduction: true,
-            populationUnchanged: simulator.stats.entityCount === initialCount
-          };
-        }
+			await simulator.reproduce(predator.id, prey.id);
+			return {
+				preventedReproduction: false,
+				populationUnchanged: simulator.stats.entityCount === initialCount,
+			};
+		} catch {
+			return {
+				preventedReproduction: true,
+				populationUnchanged: simulator.stats.entityCount === initialCount,
+			};
+		}
       });
 
       expect(incompatibleResults).not.toBeNull();

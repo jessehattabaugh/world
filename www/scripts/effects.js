@@ -195,12 +195,12 @@ document.addEventListener('DOMContentLoaded', () => {
 	const interactiveElements = document.querySelectorAll('a, button, .cta-button, .fancy-toggle');
 
 	const handleInteraction = (element) => {
-		const clickHandler = (e) => {
+		const clickHandler = () => {
 			initAudio();
 			clickSound();
 		};
 
-		const mouseenterHandler = (e) => {
+		const mouseenterHandler = () => {
 			if (audioInitialized) {
 				hoverSound();
 			}

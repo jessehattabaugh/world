@@ -140,7 +140,9 @@ export class Lifeform {
    * @returns {Object} Update information
    */
   update(deltaTime, nearbyEntities = [], world = { width: 1000, height: 1000 }) {
-    if (!this.alive) return { type: 'dead' };
+    if (!this.alive) {
+		return { type: 'dead' };
+	}
 
     // Age the organism
     this.age += deltaTime;

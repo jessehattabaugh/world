@@ -718,12 +718,13 @@ export class JessesWorldSimulator {
 			return;
 		}
 
-		// Calculate delta time
-		const deltaTime = timestamp - (this.lastFrameTime || timestamp);
 		this.lastFrameTime = timestamp;
 
 		// Increment frame counter
 		this.frameCount++;
+
+		// Before usage, define:
+		const webgpuContext = this.context; // or obtain it appropriately
 
 		// Begin drawing to the main canvas
 		const encoder = this.device.createCommandEncoder();

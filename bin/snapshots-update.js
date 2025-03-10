@@ -85,37 +85,42 @@ async function renameSnapshotsToBaselines() {
   try {
     // Ensure directory exists
     try {
-      await fs.access(SNAPSHOTS_DIR);
-    } catch (error) {
-      console.error(`Snapshots directory not found: ${SNAPSHOTS_DIR}`);
-      return;
-    }
+		await fs.access(SNAPSHOTS_DIR);
+	} catch {
+		console.error(`Snapshots directory not found: ${SNAPSHOTS_DIR}`);
+		return;
+	}
 
     // Get all files in the snapshots directory
     const files = await fs.readdir(SNAPSHOTS_DIR);
 
     let renamedCount = 0;
 
-    for (const file of files) {
-      // Skip files that already have "baseline" in the name
-      if (file.includes('baseline')) {
-        continue;
-      }
+    const updateFile = async (file) => {
+		// Skip files that already have "baseline" in the name
+		if (file.includes('baseline')) {
+			return;
+		}
 
-      const filePath = path.join(SNAPSHOTS_DIR, file);
-      const fileInfo = path.parse(filePath);
+		const filePath = path.join(SNAPSHOTS_DIR, file);
+		const fileInfo = path.parse(filePath);
 
-      // Create new filename with baseline in it
-      const newName = `${fileInfo.name}-baseline${fileInfo.ext}`;
-      const newPath = path.join(SNAPSHOTS_DIR, newName);
+		// Create new filename with baseline in it
+		const newName = `${fileInfo.name}-baseline${fileInfo.ext}`;
+		const newPath = path.join(SNAPSHOTS_DIR, newName);
 
-      // Rename the file or just log what would happen in dry run mode
-      if (!dryRun) {
-        await fs.rename(filePath, newPath);
-      }
-      console.log(`${dryRun ? '[DRY RUN] Would rename' : 'Renamed'}: ${file} → ${newName}`);
-      renamedCount++;
-    }
+		// Rename the file or just log what would happen in dry run mode
+		if (!dryRun) {
+			await fs.rename(filePath, newPath);
+		}
+		console.log(`${dryRun ? '[DRY RUN] Would rename' : 'Renamed'}: ${file} → ${newName}`);
+		renamedCount++;
+	};
+
+	const updatePromises = files.map((file) => {
+		return updateFile(file);
+	});
+	await Promise.all(updatePromises);
 
     console.log(`${dryRun ? '[DRY RUN] Would have renamed' : 'Renamed'} ${renamedCount} snapshot files to include "baseline" in the filename.`);
   } catch (error) {

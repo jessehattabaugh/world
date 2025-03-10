@@ -105,44 +105,57 @@ export class TileManager {
 		console.debug(`🌱 Creating ${optimalWorkerCount} workers for ${totalChunks} total chunks`);
 
 		// Create workers
+		const workerPromises = [];
 		for (let i = 0; i < optimalWorkerCount; i++) {
-			try {
-				// Create a new worker
-				const worker = new Worker('/scripts/engine/workers/tile-worker.js', {
-					type: 'module',
-				});
-
-				// Wrap the worker with Comlink to simplify communication
-				const wrappedWorker = Comlink.wrap(worker);
-
-				// Initialize the worker
-				await wrappedWorker.init({
-					workerId: i,
-					features: {
-						webGPU: 'gpu' in navigator,
-						offscreenCanvas: 'OffscreenCanvas' in window,
-					},
-				});
-
-				// Store worker with metadata
-				this.workers.push({
-					id: i,
-					worker,
-					api: wrappedWorker,
-					chunkCount: 0, // Number of chunks assigned to this worker
-					chunks: [], // Array of chunk IDs assigned to this worker
-				});
-
-				// Listen for messages from this worker
-				worker.addEventListener('message', (event) =>
-					this.handleWorkerMessage(worker, event),
-				);
-			} catch (error) {
-				console.error(`Failed to initialize worker ${i}:`, error);
-			}
+			workerPromises.push(this.createWorker(i));
 		}
 
+		await Promise.all(workerPromises);
+
 		console.debug(`🌱 Created ${this.workers.length} workers`);
+	}
+
+	/**
+	 * Create a single worker
+	 * @private
+	 * @param {number} workerId - ID of the worker to create
+	 * @returns {Promise<void>}
+	 */
+	async createWorker(workerId) {
+		try {
+			// Create a new worker
+			const worker = new Worker('/scripts/engine/workers/tile-worker.js', {
+				type: 'module',
+			});
+
+			// Wrap the worker with Comlink to simplify communication
+			const wrappedWorker = Comlink.wrap(worker);
+
+			// Initialize the worker
+			await wrappedWorker.init({
+				workerId,
+				features: {
+					webGPU: 'gpu' in navigator,
+					offscreenCanvas: 'OffscreenCanvas' in window,
+				},
+			});
+
+			// Store worker with metadata
+			this.workers.push({
+				id: workerId,
+				worker,
+				api: wrappedWorker,
+				chunkCount: 0, // Number of chunks assigned to this worker
+				chunks: [], // Array of chunk IDs assigned to this worker
+			});
+
+			// Listen for messages from this worker
+			worker.addEventListener('message', (event) => {
+				this.handleWorkerMessage(worker, event);
+			});
+		} catch (error) {
+			console.error(`Failed to initialize worker ${workerId}:`, error);
+		}
 	}
 
 	/**
@@ -191,21 +204,25 @@ export class TileManager {
 		const visibleChunkCoords = this.getVisibleChunkCoords();
 
 		// Set of currently visible chunk IDs
-		const visibleChunkIds = new Set(visibleChunkCoords.map((t) => t.chunkId));
+		const visibleChunkIds = new Set(visibleChunkCoords.map((t) => {return t.chunkId}));
 
 		// Find chunks to unload (chunks that were loaded but are no longer visible)
+		const unloadPromises = [];
 		for (const [chunkId, chunk] of this.chunks.entries()) {
 			if (!visibleChunkIds.has(chunkId)) {
-				await this.unloadChunk(chunkId);
+				unloadPromises.push(this.unloadChunk(chunkId));
 			}
 		}
+		await Promise.all(unloadPromises);
 
 		// Load newly visible chunks
+		const loadPromises = [];
 		for (const chunkCoord of visibleChunkCoords) {
 			if (!this.chunks.has(chunkCoord.chunkId)) {
-				await this.loadChunk(chunkCoord);
+				loadPromises.push(this.loadChunk(chunkCoord));
 			}
 		}
+		await Promise.all(loadPromises);
 
 		// Update stats
 		this.stats.activeChunks = this.chunks.size;
@@ -219,7 +236,7 @@ export class TileManager {
 	findAvailableWorker() {
 		// Find worker with fewest assigned chunks
 		return this.workers.reduce(
-			(best, current) => (current.chunkCount < best.chunkCount ? current : best),
+			(best, current) => {return (current.chunkCount < best.chunkCount ? current : best)},
 			this.workers[0],
 		);
 	}
@@ -320,18 +337,20 @@ export class TileManager {
 	 */
 	async unloadChunk(chunkId) {
 		const chunk = this.chunks.get(chunkId);
-		if (!chunk) return false;
+		if (!chunk) {
+			return false;
+		}
 
 		try {
 			// Get the worker
-			const worker = chunk.worker;
+			const { worker } = chunk;
 
 			// Tell worker to release this chunk
 			await worker.api.releaseChunk(chunkId);
 
 			// Update worker chunk assignments
 			worker.chunkCount--;
-			worker.chunks = worker.chunks.filter((id) => id !== chunkId);
+			worker.chunks = worker.chunks.filter((id) => {return id !== chunkId});
 
 			// Remove chunk from our cache
 			this.chunks.delete(chunkId);
@@ -424,7 +443,9 @@ export class TileManager {
 	 * Start the simulation
 	 */
 	start() {
-		if (this.isRunning) return;
+		if (this.isRunning) {
+			return;
+		}
 
 		// Tell all workers to start processing
 		for (const worker of this.workers) {
@@ -444,7 +465,9 @@ export class TileManager {
 	 * Stop the simulation
 	 */
 	stop() {
-		if (!this.isRunning) return;
+		if (!this.isRunning) {
+			return;
+		}
 
 		// Tell all workers to stop processing
 		for (const worker of this.workers) {
@@ -501,7 +524,9 @@ export class TileManager {
 		this.animationFrameId = requestAnimationFrame(this.render);
 
 		// Skip rendering if no context or if stopped
-		if (!this.ctx || !this.isRunning) return;
+		if (!this.ctx || !this.isRunning) {
+			return;
+		}
 
 		// Calculate delta time and FPS
 		const deltaTime = timestamp - this.lastFrameTime;
@@ -522,7 +547,9 @@ export class TileManager {
 		// Draw all visible chunks
 		for (const chunk of this.chunks.values()) {
 			// If this chunk doesn't have a bitmap, skip rendering
-			if (!chunk.bitmap) continue;
+			if (!chunk.bitmap) {
+				continue;
+			}
 
 			// Calculate if chunk is visible in current viewport
 			const chunkRight = chunk.x + chunk.width;
@@ -633,7 +660,9 @@ export class TileManager {
 	 */
 	updateChunkData(chunkId, data) {
 		const chunk = this.chunks.get(chunkId);
-		if (!chunk) return;
+		if (!chunk) {
+			return;
+		}
 
 		// Update entity data for this chunk
 		if (data.entities) {

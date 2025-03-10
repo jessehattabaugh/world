@@ -6,20 +6,19 @@
   "scripts": {
     "start": "npx serve ./www --listen 3000",
     "dev": "serve ./www --listen 3000",
-	"test": "npm-run-all --serial clean lint test:unit test:e2e test:visual test:perf",
-	"fix": "npm lint -- --fix",
+    "test": "npm-run-all --serial clean test:e2e test:visual test:perf",
+    "fix": "npm run lint -- --fix",
 
     "test:pw": "playwright test",
-    "test:unit": "npm run test:pw -- tests/unit/",
-    "test:e2e": "npm run test:pw -- tests/ecosystem/",
-    "test:visual": "npm-run-all --serial shots compare-shots",
-    "test:perf": "npm run test:pw -- tests/performance/",
+    "test:e2e": "playwright test tests/ecosystem/",
+    "test:visual": "playwright test -c playwright.config.js tests/visual/",
+    "test:perf": "playwright test tests/performance/",
     "test:stress": "cross-env STRESS_TEST=true npm run test:pw -- tests/stress/",
     "test:memory": "node bin/memory-test.js",
-    "test:ui": "npm run test:pw -- --ui",
-    "test:debug": "npm run test:pw -- --debug",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
 
-	"lint": "eslint .",
+    "lint": "eslint .",
 
     "profile": "npm-run-all --serial profile:*",
     "profile:cpu": "node --prof bin/run-tests.js && node --prof-process isolate-*-v8.log > cpu-profile.txt",
@@ -51,7 +50,7 @@
     "report": "playwright show-report"
   },
   "devDependencies": {
-	"commander": "latest",
+    "commander": "latest",
     "@eslint/compat": "latest",
     "@eslint/eslintrc": "latest",
     "@eslint/js": "latest",

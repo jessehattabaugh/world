@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 /**
  * Example tests to demonstrate best practices for Playwright testing
@@ -35,14 +35,14 @@ test.describe('Core user journeys', () => {
 				// Increase timeout and use a more specific selector if possible
 				await expect(page.getByRole('heading', { level: 1 })).toBeVisible({
 					timeout: 10000,
-					message: '🔍 Main heading should be visible on homepage'
+					message: '🔍 Main heading should be visible on homepage',
 				});
-			} catch (e) {
+			} catch {
 				console.log('Could not find h1, trying alternative selector');
 				// Alternative approach - look for any heading if h1 specifically isn't found
 				await expect(page.locator('h1, h2')).toBeVisible({
 					timeout: 5000,
-					message: '🔍 Some heading should be visible on homepage'
+					message: '🔍 Some heading should be visible on homepage',
 				});
 			}
 

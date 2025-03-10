@@ -105,11 +105,14 @@ updateNetworkStatus();
 // Register service worker if supported
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').then(registration => {
-      console.info('ServiceWorker registration successful! 🛠️ registerServiceWorker');
-    }).catch(error => {
-      console.error('ServiceWorker registration failed: 🔥', error);
-    });
+    navigator.serviceWorker
+		.register('/service-worker.js')
+		.then(({ scope }) => {
+			console.info('ServiceWorker registration successful! 🛠️ registerServiceWorker');
+		})
+		.catch((error) => {
+			console.error('ServiceWorker registration failed: 🔥', error);
+		});
   });
 }
 

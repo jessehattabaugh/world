@@ -107,7 +107,9 @@ class TileWorker {
 	 */
 	async releaseTile(tileId) {
 		const tile = this.tiles.get(tileId);
-		if (!tile) return false;
+		if (!tile) {
+			return false;
+		}
 
 		// Remove all entities that belong to this tile
 		for (const entityId of tile.entities) {
@@ -137,7 +139,9 @@ class TileWorker {
 	 */
 	async processTile({ id, timestamp, entities, isVisible }) {
 		const tile = this.tiles.get(id);
-		if (!tile) return false;
+		if (!tile) {
+			return false;
+		}
 
 		const startTime = performance.now();
 
@@ -188,8 +192,12 @@ class TileWorker {
 		if (entity instanceof Lifeform) {
 			// Calculate nearby entities (simplified for demo)
 			const nearbyEntities = Array.from(tile.entities)
-				.map((id) => this.entities.get(id))
-				.filter((e) => e && e !== entity);
+				.map((id) => {
+					return this.entities.get(id);
+				})
+				.filter((e) => {
+					return e && e !== entity;
+				});
 
 			// Update lifeform state
 			const result = entity.update(deltaTime, nearbyEntities, {
@@ -205,7 +213,7 @@ class TileWorker {
 					this.entities.delete(entity.id);
 				} else if (result.type === 'reproduced' && result.offspring) {
 					// Add new offspring
-					const offspring = result.offspring;
+					const { offspring } = result;
 					this.entities.set(offspring.id, offspring);
 					tile.entities.add(offspring.id);
 					tile.bufferedUpdates.push({
@@ -221,12 +229,18 @@ class TileWorker {
 				entity.position.y += entity.velocity.y * deltaTime;
 
 				// Simple boundary checking
-				if (entity.position.x < tile.x) entity.position.x = tile.x;
-				if (entity.position.y < tile.y) entity.position.y = tile.y;
-				if (entity.position.x > tile.x + tile.width)
+				if (entity.position.x < tile.x) {
+					entity.position.x = tile.x;
+				}
+				if (entity.position.y < tile.y) {
+					entity.position.y = tile.y;
+				}
+				if (entity.position.x > tile.x + tile.width) {
 					entity.position.x = tile.x + tile.width;
-				if (entity.position.y > tile.y + tile.height)
+				}
+				if (entity.position.y > tile.y + tile.height) {
 					entity.position.y = tile.y + tile.height;
+				}
 			}
 		}
 	}
@@ -275,9 +289,11 @@ class TileWorker {
 	 */
 	renderTile(tileId) {
 		const tile = this.tiles.get(tileId);
-		if (!tile || !tile.ctx) return;
+		if (!tile || !tile.ctx) {
+			return;
+		}
 
-		const ctx = tile.ctx;
+		const { ctx } = tile;
 
 		// Clear tile
 		ctx.clearRect(0, 0, tile.width, tile.height);
@@ -309,7 +325,9 @@ class TileWorker {
 		// Draw entities
 		for (const entityId of tile.entities) {
 			const entity = this.entities.get(entityId);
-			if (!entity) continue;
+			if (!entity) {
+				continue;
+			}
 
 			// Transform to local tile coordinates
 			const localX = entity.position.x - tile.x;
@@ -427,7 +445,9 @@ class TileWorker {
 	 */
 	async getTileBitmap(tileId) {
 		const tile = this.tiles.get(tileId);
-		if (!tile || !tile.canvas) return null;
+		if (!tile || !tile.canvas) {
+			return null;
+		}
 
 		// Create a bitmap from the canvas
 		return createImageBitmap(tile.canvas);
@@ -441,7 +461,9 @@ class TileWorker {
 	 */
 	async spawnEntity(entityOptions, entityId, tileId) {
 		const tile = this.tiles.get(tileId);
-		if (!tile) return false;
+		if (!tile) {
+			return false;
+		}
 
 		// Create entity based on type
 		let entity;

@@ -11,139 +11,146 @@
  *   --ci                 Run in CI mode (more concise output)
  */
 
-import { execSync } from 'child_process';
-import { spawn } from 'child_process';
+import { execSync, spawn } from 'child_process';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
-const skipArg = args.find(arg => {return arg.startsWith('--skip=')});
-const onlyArg = args.find(arg => {return arg.startsWith('--only=')});
+const skipArg = args.find((arg) => {
+	return arg.startsWith('--skip=');
+});
+const onlyArg = args.find((arg) => {
+	return arg.startsWith('--only=');
+});
 const shouldBail = args.includes('--bail');
 const ciMode = args.includes('--ci');
 
 // Parse skipped tests
-const skippedTests = skipArg
-  ? skipArg.replace('--skip=', '').split(',')
-  : [];
+const skippedTests = skipArg ? skipArg.replace('--skip=', '').split(',') : [];
 
 // Parse tests to run
-const onlyTests = onlyArg
-  ? onlyArg.replace('--only=', '').split(',')
-  : [];
+const onlyTests = onlyArg ? onlyArg.replace('--only=', '').split(',') : [];
 
 // Define all test scripts in the desired sequence
 const allTestScripts = [
-  { name: 'clean-snapshots', script: 'test:clean-snapshots', description: 'Cleaning snapshots' },
-  { name: 'lint', script: 'lint', description: 'Linting code' },
-  { name: 'local', script: 'test:local', description: 'Running local tests' },
-  { name: 'perf', script: 'test:perf', description: 'Running performance tests' },
-  { name: 'staging', script: 'test:staging', description: 'Running staging tests' },
-  { name: 'prod', script: 'test:prod', description: 'Running production tests' }
+	{ name: 'clean-snapshots', script: 'test:clean-snapshots', description: 'Cleaning snapshots' },
+	{ name: 'lint', script: 'lint', description: 'Linting code' },
+	{ name: 'local', script: 'test:local', description: 'Running local tests' },
+	{ name: 'perf', script: 'test:perf', description: 'Running performance tests' },
+	{ name: 'staging', script: 'test:staging', description: 'Running staging tests' },
+	{ name: 'prod', script: 'test:prod', description: 'Running production tests' },
 ];
 
 // Filter tests based on command line arguments
-const testsToRun = allTestScripts.filter(test => {
-  if (onlyTests.length > 0) {
-    return onlyTests.includes(test.name);
-  }
-  return !skippedTests.includes(test.name);
+const testsToRun = allTestScripts.filter((test) => {
+	if (onlyTests.length > 0) {
+		return onlyTests.includes(test.name);
+	}
+	return !skippedTests.includes(test.name);
 });
 
 console.log('Starting test sequence:');
 testsToRun.forEach((test, i) => {
-  console.log(`${i + 1}. ${test.description}`);
+	console.log(`${i + 1}. ${test.description}`);
 });
 
 // Function to run a command with proper output handling
 async function runCommand(command) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn('npm', ['run', command], {
-      stdio: ciMode ? ['ignore', 'pipe', 'pipe'] : 'inherit',
-      shell: true
-    });
+	return new Promise((resolve, reject) => {
+		const proc = spawn('npm', ['run', command], {
+			stdio: ciMode ? ['ignore', 'pipe', 'pipe'] : 'inherit',
+			shell: true,
+		});
 
-    let output = '';
+		let output = '';
 
-    if (ciMode) {
-      proc.stdout.on('data', (data) => {
-        output += data.toString();
-      });
+		if (ciMode) {
+			proc.stdout.on('data', (data) => {
+				output += data.toString();
+			});
 
-      proc.stderr.on('data', (data) => {
-        output += data.toString();
-      });
-    }
+			proc.stderr.on('data', (data) => {
+				output += data.toString();
+			});
+		}
 
-    proc.on('close', (code) => {
-      if (code === 0) {
-        if (ciMode) {
-          console.log(`✓ Successfully ran ${command}`);
-        }
-        resolve();
-      } else {
-        if (ciMode) {
-          console.error(`Failed running ${command}:`);
-          console.error(output);
-        }
-        reject(new Error(`Command failed with exit code ${code}`));
-      }
-    });
-  });
+		proc.on('close', (code) => {
+			if (code === 0) {
+				if (ciMode) {
+					console.log(`✓ Successfully ran ${command}`);
+				}
+				resolve();
+			} else {
+				if (ciMode) {
+					console.error(`Failed running ${command}:`);
+					console.error(output);
+				}
+				reject(new Error(`Command failed with exit code ${code}`));
+			}
+		});
+	});
 }
 
 // Run tests in sequence
 async function runTests() {
-  const startTime = Date.now();
-  const results = [];
+	const startTime = Date.now();
+	const results = [];
 
-  for (const [index, test] of testsToRun.entries()) {
-    const testStartTime = Date.now();
-    console.log(`\n[${index + 1}/${testsToRun.length}] ${test.description}...`);
+	const testPromises = testsToRun.map(async (test, index) => {
+		const testStartTime = Date.now();
+		console.log(`\n[${index + 1}/${testsToRun.length}] ${test.description}...`);
 
-    try {
-      await runCommand(test.script);
-      const duration = ((Date.now() - testStartTime) / 1000).toFixed(2);
-      results.push({ name: test.name, success: true, duration });
-      console.log(`✓ ${test.description} completed successfully (${duration}s)`);
-    } catch (error) {
-      const duration = ((Date.now() - testStartTime) / 1000).toFixed(2);
-      results.push({ name: test.name, success: false, duration, error: error.message });
-      console.error(`✗ ${test.description} failed (${duration}s)`);
+		try {
+			await runCommand(test.script);
+			const duration = ((Date.now() - testStartTime) / 1000).toFixed(2);
+			results.push({ name: test.name, success: true, duration });
+			console.log(`✓ ${test.description} completed successfully (${duration}s)`);
+		} catch (error) {
+			const duration = ((Date.now() - testStartTime) / 1000).toFixed(2);
+			results.push({ name: test.name, success: false, duration, error: error.message });
+			console.error(`✗ ${test.description} failed (${duration}s)`);
 
-      if (shouldBail) {
-        console.error('Stopping due to failure (--bail flag)');
-        break;
-      }
-    }
-  }
+			if (shouldBail) {
+				console.error('Stopping due to failure (--bail flag)');
+				throw error;
+			}
+		}
+	});
 
-  // Generate report
-  const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
-  const successful = results.filter(r => {return r.success}).length;
+	await Promise.all(testPromises);
 
-  console.log('\n==== Test Results ====');
-  console.log(`${successful}/${results.length} tests passed (${totalTime}s total)`);
+	// Generate report
+	const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+	const successful = results.filter((r) => {
+		return r.success;
+	}).length;
 
-  results.forEach(result => {
-    const icon = result.success ? '✓' : '✗';
-    console.log(`${icon} ${result.name} (${result.duration}s)`);
-  });
+	console.log('\n==== Test Results ====');
+	console.log(`${successful}/${results.length} tests passed (${totalTime}s total)`);
 
-  // Show test report if any tests ran
-  if (results.length > 0) {
-    try {
-      console.log('\nGenerating test report...');
-      execSync('npm run test:report', { stdio: 'ignore' });
-      console.log('Test report available. Run "npx playwright show-report" to view it.');
-    } catch (e) {
-      console.warn('Could not generate test report.');
-    }
-  }
+	results.forEach((result) => {
+		const icon = result.success ? '✓' : '✗';
+		console.log(`${icon} ${result.name} (${result.duration}s)`);
+	});
 
-  // Exit with error code if any test failed
-  if (results.some(r => {return !r.success})) {
-    process.exit(1);
-  }
+	// Show test report if any tests ran
+	if (results.length > 0) {
+		try {
+			console.log('\nGenerating test report...');
+			execSync('npm run test:report', { stdio: 'ignore' });
+			console.log('Test report available. Run "npx playwright show-report" to view it.');
+		} catch {
+			console.warn('Could not generate test report.');
+		}
+	}
+
+	// Exit with error code if any test failed
+	if (
+		results.some((r) => {
+			return !r.success;
+		})
+	) {
+		process.exit(1);
+	}
 }
 
 // Run the tests

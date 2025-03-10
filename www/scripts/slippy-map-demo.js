@@ -271,7 +271,9 @@ class SlippyMapDemo {
 			return;
 		}
 
-		if (this.isRunning) return;
+		if (this.isRunning) {
+			return;
+		}
 
 		this.isRunning = true;
 		this.tileManager.start();
@@ -297,7 +299,9 @@ class SlippyMapDemo {
 	 * @private
 	 */
 	animationFrame(timestamp) {
-		if (!this.isRunning) return;
+		if (!this.isRunning) {
+			return;
+		}
 
 		// Calculate FPS
 		const elapsed = timestamp - this.lastFrameTime;
@@ -332,7 +336,9 @@ class SlippyMapDemo {
 	 * @private
 	 */
 	onMouseDown(event) {
-		if (event.button !== 0) return; // Only left mouse button
+		if (event.button !== 0) {
+			return;
+		} // Only left mouse button
 
 		this.isPanning = true;
 		this.lastMousePosition = {
@@ -349,7 +355,9 @@ class SlippyMapDemo {
 	 * @private
 	 */
 	onMouseMove(event) {
-		if (!this.isPanning) return;
+		if (!this.isPanning) {
+			return;
+		}
 
 		const dx = event.clientX - this.lastMousePosition.x;
 		const dy = event.clientY - this.lastMousePosition.y;
@@ -386,8 +394,9 @@ class SlippyMapDemo {
 
 		// Get the position of the cursor relative to the canvas
 		const rect = this.canvas.getBoundingClientRect();
-		const x = event.clientX - rect.left;
-		const y = event.clientY - rect.top;
+		const { clientX, clientY } = event;
+		const x = clientX - rect.left;
+		const y = clientY - rect.top;
 
 		// Zoom around the cursor position
 		this.tileManager.zoomViewport(zoomFactor, x, y);
@@ -415,7 +424,9 @@ class SlippyMapDemo {
 	 * @private
 	 */
 	resizeCanvas() {
-		if (!this.canvas) return;
+		if (!this.canvas) {
+			return;
+		}
 
 		// Get the desired size from the container
 		const displayWidth = this.canvas.clientWidth;
@@ -433,7 +444,9 @@ class SlippyMapDemo {
 	 * Reset the view to the initial state
 	 */
 	resetView() {
-		if (!this.tileManager) return;
+		if (!this.tileManager) {
+			return;
+		}
 
 		this.tileManager.setViewport({
 			x: 0,
@@ -449,9 +462,11 @@ class SlippyMapDemo {
 	 * @param {number} count - Number of entities to spawn
 	 */
 	spawnRandomEntities(count = 10) {
-		if (!this.tileManager) return;
+		if (!this.tileManager) {
+			return;
+		}
 
-		const viewport = this.tileManager.viewport;
+		const { viewport } = this.tileManager;
 		const spawned = [];
 
 		for (let i = 0; i < count; i++) {
@@ -510,7 +525,9 @@ class SlippyMapDemo {
 	 * @private
 	 */
 	updateStatus(message, isError = false) {
-		if (!this.statusElement) return;
+		if (!this.statusElement) {
+			return;
+		}
 
 		this.statusElement.textContent = message;
 		this.statusElement.className = isError ? 'error' : 'success';
@@ -524,7 +541,9 @@ class SlippyMapDemo {
 	 */
 	updateStatsDisplay() {
 		const statsElement = document.getElementById('stats-display');
-		if (!statsElement) return;
+		if (!statsElement) {
+			return;
+		}
 
 		statsElement.innerHTML = `
       <div>FPS: ${this.stats.fps}</div>
